@@ -234,14 +234,15 @@ public final class Options {
    * This is used in FileSystem and FileContext to specify checksum options.
    */
   public static class ChecksumOpt {
-    private final DataChecksum.Type checksumType;
-    private final int bytesPerChecksum;
+    private final int crcBlockSize;
+    private final DataChecksum.Type crcType;
 
     /**
      * Create a uninitialized one
      */
     public ChecksumOpt() {
-      this(DataChecksum.Type.DEFAULT, -1);
+      crcBlockSize = -1;
+      crcType = DataChecksum.Type.DEFAULT;
     }
 
     /**
@@ -250,21 +251,16 @@ public final class Options {
      * @param size bytes per checksum
      */
     public ChecksumOpt(DataChecksum.Type type, int size) {
-      checksumType = type;
-      bytesPerChecksum = size;
+      crcBlockSize = size;
+      crcType = type;
     }
 
     public int getBytesPerChecksum() {
-      return bytesPerChecksum;
+      return crcBlockSize;
     }
 
     public DataChecksum.Type getChecksumType() {
-      return checksumType;
-    }
-    
-    @Override
-    public String toString() {
-      return checksumType + ":" + bytesPerChecksum;
+      return crcType;
     }
 
     /**

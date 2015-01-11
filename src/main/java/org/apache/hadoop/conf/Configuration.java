@@ -78,9 +78,6 @@ import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.net.NetUtils;
-import org.apache.hadoop.security.alias.CredentialProvider;
-import org.apache.hadoop.security.alias.CredentialProvider.CredentialEntry;
-import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringInterner;
 import org.apache.hadoop.util.StringUtils;
@@ -110,9 +107,8 @@ import com.google.common.base.Preconditions;
  *
  * <p>Unless explicitly turned off, Hadoop by default specifies two 
  * resources, loaded in-order from the classpath: <ol>
- * <li><tt>
- * <a href="{@docRoot}/../hadoop-project-dist/hadoop-common/core-default.xml">
- * core-default.xml</a></tt>: Read-only defaults for hadoop.</li>
+ * <li><tt><a href="{@docRoot}/../core-default.html">core-default.xml</a>
+ * </tt>: Read-only defaults for hadoop.</li>
  * <li><tt>core-site.xml</tt>: Site-specific configuration for a given hadoop
  * installation.</li>
  * </ol>
@@ -556,32 +552,6 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
    */
   public static boolean isDeprecated(String key) {
     return deprecationContext.get().getDeprecatedKeyMap().containsKey(key);
-  }
-
-  /**
-   * Sets all deprecated properties that are not currently set but have a
-   * corresponding new property that is set. Useful for iterating the
-   * properties when all deprecated properties for currently set properties
-   * need to be present.
-   */
-  public void setDeprecatedProperties() {
-    DeprecationContext deprecations = deprecationContext.get();
-    Properties props = getProps();
-    Properties overlay = getOverlay();
-    for (Map.Entry<String, DeprecatedKeyInfo> entry :
-        deprecations.getDeprecatedKeyMap().entrySet()) {
-      String depKey = entry.getKey();
-      if (!overlay.contains(depKey)) {
-        for (String newKey : entry.getValue().newKeys) {
-          String val = overlay.getProperty(newKey);
-          if (val != null) {
-            props.setProperty(depKey, val);
-            overlay.setProperty(depKey, val);
-            break;
-          }
-        }
-      }
-    }
   }
 
   /**
@@ -1792,111 +1762,6 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
   }
 
   /**
-   * Get the value for a known password configuration element.
-   * In order to enable the elimination of clear text passwords in config,
-   * this method attempts to resolve the property name as an alias through
-   * the CredentialProvider API and conditionally fallsback to config.
-   * @param name property name
-   * @return password
-   */
-  public char[] getPassword(String name) throws IOException {
-    char[] pass = null;
-
-    pass = getPasswordFromCredentialProviders(name);
-
-    if (pass == null) {
-      pass = getPasswordFromConfig(name);
-    }
-
-    return pass;
-  }
-
-  /**
-   * Try and resolve the provided element name as a credential provider
-   * alias.
-   * @param name alias of the provisioned credential
-   * @return password or null if not found
-   * @throws IOException
-   */
-  protected char[] getPasswordFromCredentialProviders(String name)
-      throws IOException {
-    char[] pass = null;
-    try {
-      List<CredentialProvider> providers =
-          CredentialProviderFactory.getProviders(this);
-
-      if (providers != null) {
-        for (CredentialProvider provider : providers) {
-          try {
-            CredentialEntry entry = provider.getCredentialEntry(name);
-            if (entry != null) {
-              pass = entry.getCredential();
-              break;
-            }
-          }
-          catch (IOException ioe) {
-            throw new IOException("Can't get key " + name + " from key provider" +
-            		"of type: " + provider.getClass().getName() + ".", ioe);
-          }
-        }
-      }
-    }
-    catch (IOException ioe) {
-      throw new IOException("Configuration problem with provider path.", ioe);
-    }
-
-    return pass;
-  }
-
-  /**
-   * Fallback to clear text passwords in configuration.
-   * @param name
-   * @return clear text password or null
-   */
-  protected char[] getPasswordFromConfig(String name) {
-    char[] pass = null;
-    if (getBoolean(CredentialProvider.CLEAR_TEXT_FALLBACK, true)) {
-      String passStr = get(name);
-      if (passStr != null) {
-        pass = passStr.toCharArray();
-      }
-    }
-    return pass;
-  }
-
-  /**
-   * Get the socket address for <code>hostProperty</code> as a
-   * <code>InetSocketAddress</code>. If <code>hostProperty</code> is
-   * <code>null</code>, <code>addressProperty</code> will be used. This
-   * is useful for cases where we want to differentiate between host
-   * bind address and address clients should use to establish connection.
-   *
-   * @param hostProperty bind host property name.
-   * @param addressProperty address property name.
-   * @param defaultAddressValue the default value
-   * @param defaultPort the default port
-   * @return InetSocketAddress
-   */
-  public InetSocketAddress getSocketAddr(
-      String hostProperty,
-      String addressProperty,
-      String defaultAddressValue,
-      int defaultPort) {
-
-    InetSocketAddress bindAddr = getSocketAddr(
-      addressProperty, defaultAddressValue, defaultPort);
-
-    final String host = get(hostProperty);
-
-    if (host == null || host.isEmpty()) {
-      return bindAddr;
-    }
-
-    return NetUtils.createSocketAddr(
-        host, bindAddr.getPort(), hostProperty);
-  }
-
-  /**
    * Get the socket address for <code>name</code> property as a
    * <code>InetSocketAddress</code>.
    * @param name property name.
@@ -1916,40 +1781,6 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
    */
   public void setSocketAddr(String name, InetSocketAddress addr) {
     set(name, NetUtils.getHostPortString(addr));
-  }
-
-  /**
-   * Set the socket address a client can use to connect for the
-   * <code>name</code> property as a <code>host:port</code>.  The wildcard
-   * address is replaced with the local host's address. If the host and address
-   * properties are configured the host component of the address will be combined
-   * with the port component of the addr to generate the address.  This is to allow
-   * optional control over which host name is used in multi-home bind-host
-   * cases where a host can have multiple names
-   * @param hostProperty the bind-host configuration name
-   * @param addressProperty the service address configuration name
-   * @param defaultAddressValue the service default address configuration value
-   * @param addr InetSocketAddress of the service listener
-   * @return InetSocketAddress for clients to connect
-   */
-  public InetSocketAddress updateConnectAddr(
-      String hostProperty,
-      String addressProperty,
-      String defaultAddressValue,
-      InetSocketAddress addr) {
-
-    final String host = get(hostProperty);
-    final String connectHostPort = getTrimmed(addressProperty, defaultAddressValue);
-
-    if (host == null || host.isEmpty() || connectHostPort == null || connectHostPort.isEmpty()) {
-      //not our case, fall back to original logic
-      return updateConnectAddr(addressProperty, addr);
-    }
-
-    final String connectHost = connectHostPort.split(":")[0];
-    // Create connect address using client address hostname and server port.
-    return updateConnectAddr(addressProperty, NetUtils.createSocketAddrForHost(
-        connectHost, addr.getPort()));
   }
   
   /**
@@ -2533,7 +2364,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
       if (!finalParameters.contains(attr)) {
         properties.setProperty(attr, value);
         updatingResource.put(attr, source);
-      } else if (!value.equals(properties.getProperty(attr))) {
+      } else {
         LOG.warn(name+":an attempt to override final parameter: "+attr
             +";  Ignoring.");
       }
@@ -2774,8 +2605,7 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
           item.getValue() instanceof String) {
         m = p.matcher((String)item.getKey());
         if(m.find()) { // match
-          result.put((String) item.getKey(),
-              substituteVars(getProps().getProperty((String) item.getKey())));
+          result.put((String) item.getKey(), (String) item.getValue());
         }
       }
     }

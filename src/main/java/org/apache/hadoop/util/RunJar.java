@@ -18,25 +18,23 @@
 
 package org.apache.hadoop.util;
 
-import java.io.File;
+import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
+import java.io.File;
 import java.util.regex.Pattern;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.jar.JarFile;
+import java.util.jar.JarEntry;
+import java.util.jar.Manifest;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -56,21 +54,6 @@ public class RunJar {
    * Priority of the RunJar shutdown hook.
    */
   public static final int SHUTDOWN_HOOK_PRIORITY = 10;
-
-  /**
-   * Environment key for using the client classloader.
-   */
-  public static final String HADOOP_USE_CLIENT_CLASSLOADER =
-      "HADOOP_USE_CLIENT_CLASSLOADER";
-  /**
-   * Environment key for the (user-provided) hadoop classpath.
-   */
-  public static final String HADOOP_CLASSPATH = "HADOOP_CLASSPATH";
-  /**
-   * Environment key for the system classes.
-   */
-  public static final String HADOOP_CLIENT_CLASSLOADER_SYSTEM_CLASSES =
-      "HADOOP_CLIENT_CLASSLOADER_SYSTEM_CLASSES";
 
   /**
    * Unpack a jar file into a directory.
@@ -133,10 +116,6 @@ public class RunJar {
   /** Run a Hadoop job jar.  If the main class is not in the jar's manifest,
    * then it must be provided on the command line. */
   public static void main(String[] args) throws Throwable {
-    new RunJar().run(args);
-  }
-
-  public void run(String[] args) throws Throwable {
     String usage = "RunJar jarFile [mainClass] args...";
 
     if (args.length < 1) {
@@ -176,7 +155,7 @@ public class RunJar {
     }
     mainClassName = mainClassName.replaceAll("/", ".");
 
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+    File tmpDir = new File(new Configuration().get("hadoop.tmp.dir"));
     ensureDirectory(tmpDir);
 
     final File workDir;
@@ -185,7 +164,7 @@ public class RunJar {
     } catch (IOException ioe) {
       // If user has insufficient perms to write to tmpDir, default  
       // "Permission denied" message doesn't specify a filename. 
-      System.err.println("Error creating temp dir in java.io.tmpdir "
+      System.err.println("Error creating temp dir in hadoop.tmp.dir "
                          + tmpDir + " due to " + ioe.getMessage());
       System.exit(-1);
       return;
@@ -208,7 +187,19 @@ public class RunJar {
 
     unJar(file, workDir);
 
-    ClassLoader loader = createClassLoader(file, workDir);
+    ArrayList<URL> classPath = new ArrayList<URL>();
+    classPath.add(new File(workDir+"/").toURI().toURL());
+    classPath.add(file.toURI().toURL());
+    classPath.add(new File(workDir, "classes/").toURI().toURL());
+    File[] libs = new File(workDir, "lib").listFiles();
+    if (libs != null) {
+      for (int i = 0; i < libs.length; i++) {
+        classPath.add(libs[i].toURI().toURL());
+      }
+    }
+    
+    ClassLoader loader =
+      new URLClassLoader(classPath.toArray(new URL[0]));
 
     Thread.currentThread().setContextClassLoader(loader);
     Class<?> mainClass = Class.forName(mainClassName, true, loader);
@@ -223,65 +214,5 @@ public class RunJar {
       throw e.getTargetException();
     }
   }
-
-  /**
-   * Creates a classloader based on the environment that was specified by the
-   * user. If HADOOP_USE_CLIENT_CLASSLOADER is specified, it creates an
-   * application classloader that provides the isolation of the user class space
-   * from the hadoop classes and their dependencies. It forms a class space for
-   * the user jar as well as the HADOOP_CLASSPATH. Otherwise, it creates a
-   * classloader that simply adds the user jar to the classpath.
-   */
-  private ClassLoader createClassLoader(File file, final File workDir)
-      throws MalformedURLException {
-    ClassLoader loader;
-    // see if the client classloader is enabled
-    if (useClientClassLoader()) {
-      StringBuilder sb = new StringBuilder();
-      sb.append(workDir+"/").
-          append(File.pathSeparator).append(file).
-          append(File.pathSeparator).append(workDir+"/classes/").
-          append(File.pathSeparator).append(workDir+"/lib/*");
-      // HADOOP_CLASSPATH is added to the client classpath
-      String hadoopClasspath = getHadoopClasspath();
-      if (hadoopClasspath != null && !hadoopClasspath.isEmpty()) {
-        sb.append(File.pathSeparator).append(hadoopClasspath);
-      }
-      String clientClasspath = sb.toString();
-      // get the system classes
-      String systemClasses = getSystemClasses();
-      List<String> systemClassesList = systemClasses == null ?
-          null :
-          Arrays.asList(StringUtils.getTrimmedStrings(systemClasses));
-      // create an application classloader that isolates the user classes
-      loader = new ApplicationClassLoader(clientClasspath,
-          getClass().getClassLoader(), systemClassesList);
-    } else {
-      List<URL> classPath = new ArrayList<URL>();
-      classPath.add(new File(workDir+"/").toURI().toURL());
-      classPath.add(file.toURI().toURL());
-      classPath.add(new File(workDir, "classes/").toURI().toURL());
-      File[] libs = new File(workDir, "lib").listFiles();
-      if (libs != null) {
-        for (int i = 0; i < libs.length; i++) {
-          classPath.add(libs[i].toURI().toURL());
-        }
-      }
-      // create a normal parent-delegating classloader
-      loader = new URLClassLoader(classPath.toArray(new URL[0]));
-    }
-    return loader;
-  }
-
-  boolean useClientClassLoader() {
-    return Boolean.parseBoolean(System.getenv(HADOOP_USE_CLIENT_CLASSLOADER));
-  }
-
-  String getHadoopClasspath() {
-    return System.getenv(HADOOP_CLASSPATH);
-  }
-
-  String getSystemClasses() {
-    return System.getenv(HADOOP_CLIENT_CLASSLOADER_SYSTEM_CLASSES);
-  }
+  
 }

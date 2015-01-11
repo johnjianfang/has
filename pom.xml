@@ -17,15 +17,9 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.apache.hadoop</groupId>
-    <artifactId>hadoop-project-dist</artifactId>
-    <version>2.6.0</version>
-    <relativePath>../../hadoop-project-dist</relativePath>
-  </parent>
   <groupId>org.apache.hadoop</groupId>
   <artifactId>hadoop-common</artifactId>
-  <version>2.6.0</version>
+  <version>2.5.2</version>
   <description>Apache Hadoop Common</description>
   <name>Apache Hadoop Common</name>
   <packaging>jar</packaging>
@@ -33,234 +27,251 @@
   <properties>
     <hadoop.component>common</hadoop.component>
     <is.hadoop.component>true</is.hadoop.component>
-    <wsce.config.dir>../etc/hadoop</wsce.config.dir>
-    <wsce.config.file>wsce-site.xml</wsce.config.file>
+    <!-- avro version -->
+    <avro.version>1.7.4</avro.version>
+
+    <!-- jersey version -->
+    <jersey.version>1.9</jersey.version>
+
+    <!-- ProtocolBuffer version, used to verify the protoc version and -->
+    <!-- define the protobuf JAR version                               -->
+    <protobuf.version>2.5.0</protobuf.version>
+    <protoc.path>${env.HADOOP_PROTOC_PATH}</protoc.path>
+
+    <zookeeper.version>3.4.6</zookeeper.version>
+    <hadoop.version>2.5.2</hadoop.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-annotations</artifactId>
+      <version>${hadoop.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <version>11.0.2</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
       <artifactId>commons-cli</artifactId>
+      <version>1.2</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
+      <version>3.1.1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>xmlenc</groupId>
       <artifactId>xmlenc</artifactId>
+      <version>0.52</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>commons-httpclient</groupId>
       <artifactId>commons-httpclient</artifactId>
+      <version>3.1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
+      <version>1.4</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
+      <version>2.4</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>commons-net</groupId>
       <artifactId>commons-net</artifactId>
+      <version>3.1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
+      <version>3.2.1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty</artifactId>
+      <version>6.1.26</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty-util</artifactId>
+      <version>6.1.26</version>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-core</artifactId>
+      <version>${jersey.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <!-- Used, even though 'mvn dependency:analyze' doesn't find it -->
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-json</artifactId>
+      <version>${jersey.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
+      <version>${jersey.version}</version>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>tomcat</groupId>
       <artifactId>jasper-compiler</artifactId>
+      <version>5.5.23</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>tomcat</groupId>
       <artifactId>jasper-runtime</artifactId>
+      <version>5.5.23</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>javax.servlet.jsp</groupId>
       <artifactId>jsp-api</artifactId>
+      <version>2.1</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>commons-el</groupId>
       <artifactId>commons-el</artifactId>
+      <version>1.0</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
+      <version>1.1.3</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
+      <version>1.2.17</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>net.java.dev.jets3t</groupId>
       <artifactId>jets3t</artifactId>
+      <version>0.9.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>4.11</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
+      <version>2.6</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>commons-configuration</groupId>
       <artifactId>commons-configuration</artifactId>
+      <version>1.6</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+      <version>1.7.5</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.5</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-core-asl</artifactId>
+      <version>1.9.13</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-mapper-asl</artifactId>
+      <version>1.9.13</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
+      <version>1.8.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.avro</groupId>
       <artifactId>avro</artifactId>
+      <version>${avro.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.ant</groupId>
       <artifactId>ant</artifactId>
+      <version>1.8.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-auth</artifactId>
+      <version>${protobuf.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-auth</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-minikdc</artifactId>
-      <scope>test</scope>
+      <version>${hadoop.version}</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.jcraft</groupId>
       <artifactId>jsch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.curator</groupId>
-      <artifactId>curator-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.curator</groupId>
-      <artifactId>curator-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.curator</groupId>
-      <artifactId>curator-recipes</artifactId>
+      <version>0.1.42</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
+      <version>1.3.9</version>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.htrace</groupId>
-      <artifactId>htrace-core</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.zookeeper</groupId>
       <artifactId>zookeeper</artifactId>
+      <version>${zookeeper.version}</version>
       <exclusions>
         <exclusion>
           <groupId>jline</groupId>
@@ -288,12 +299,20 @@
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
       <artifactId>zookeeper</artifactId>
+      <version>${zookeeper.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.netty</groupId>
+          <artifactId>netty</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-compress</artifactId>
+      <version>1.4.1</version>
     </dependency>
   </dependencies>
 
@@ -321,6 +340,120 @@
         <filtering>true</filtering>
       </resource>
     </resources>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>2.4.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.5.1</version>
+          <configuration>
+            <source>1.6</source>
+            <target>1.6</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>1.5</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.16</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.3.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>2.3.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.8.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>2.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>2.3.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>2.6</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>native-maven-plugin</artifactId>
+          <version>1.0-alpha-7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>make-maven-plugin</artifactId>
+          <version>1.0-beta-1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>2.1.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro-maven-plugin</artifactId>
+          <version>${avro.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo.jspc</groupId>
+          <artifactId>jspc-maven-plugin</artifactId>
+          <version>2.0-alpha-3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>1.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-pdf-plugin</artifactId>
+          <version>1.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-maven-plugins</artifactId>
+          <version>${project.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    
     <plugins>
       <plugin>
         <groupId>org.apache.hadoop</groupId>
@@ -365,7 +498,6 @@
                   <include>ProtobufRpcEngine.proto</include>
                   <include>Security.proto</include>
                   <include>GetUserMappingsProtocol.proto</include>
-                  <include>TraceAdmin.proto</include>
                   <include>RefreshAuthorizationPolicyProtocol.proto</include>
                   <include>RefreshUserMappingsProtocol.proto</include>
                   <include>RefreshCallQueueProtocol.proto</include>
@@ -406,7 +538,6 @@
           <systemPropertyVariables>
             <startKdc>${startKdc}</startKdc>
             <kdc.resource.dir>${kdc.resource.dir}</kdc.resource.dir>
-            <runningWithNative>${runningWithNative}</runningWithNative>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -501,6 +632,7 @@
             <exclude>src/test/resources/kdc/ldif/users.ldif</exclude>
             <exclude>src/main/native/src/org/apache/hadoop/io/compress/lz4/lz4.h</exclude>
             <exclude>src/main/native/src/org/apache/hadoop/io/compress/lz4/lz4.c</exclude>
+            <exclude>src/main/native/src/org/apache/hadoop/io/compress/lz4/lz4_encoder.h</exclude>
             <exclude>src/main/native/src/org/apache/hadoop/io/compress/lz4/lz4hc.h</exclude>
             <exclude>src/main/native/src/org/apache/hadoop/io/compress/lz4/lz4hc.c</exclude>
             <exclude>src/main/native/src/org/apache/hadoop/io/compress/lz4/lz4hc_encoder.h</exclude>
@@ -509,7 +641,6 @@
             <exclude>src/test/resources/test.har/_index</exclude>
             <exclude>src/test/resources/test.har/_masterindex</exclude>
             <exclude>src/test/resources/test.har/part-0</exclude>
-            <exclude>src/test/resources/javakeystoreprovider.password</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -540,12 +671,6 @@
         <snappy.lib></snappy.lib>
         <snappy.include></snappy.include>
         <require.snappy>false</require.snappy>
-        <openssl.prefix></openssl.prefix>
-        <openssl.lib></openssl.lib>
-        <openssl.include></openssl.include>
-        <require.openssl>false</require.openssl>
-        <runningWithNative>true</runningWithNative>
-        <bundle.openssl.in.bin>false</bundle.openssl.in.bin>
       </properties>
       <build>
         <plugins>
@@ -595,8 +720,6 @@
                     <javahClassName>org.apache.hadoop.io.compress.snappy.SnappyDecompressor</javahClassName>
                     <javahClassName>org.apache.hadoop.io.compress.lz4.Lz4Compressor</javahClassName>
                     <javahClassName>org.apache.hadoop.io.compress.lz4.Lz4Decompressor</javahClassName>
-                    <javahClassName>org.apache.hadoop.crypto.OpensslCipher</javahClassName>
-                    <javahClassName>org.apache.hadoop.crypto.random.OpensslSecureRandom</javahClassName>
                     <javahClassName>org.apache.hadoop.util.NativeCrc32</javahClassName>
                     <javahClassName>org.apache.hadoop.net.unix.DomainSocket</javahClassName>
                     <javahClassName>org.apache.hadoop.net.unix.DomainSocketWatcher</javahClassName>
@@ -617,7 +740,7 @@
                 <configuration>
                   <target>
                     <exec executable="cmake" dir="${project.build.directory}/native" failonerror="true">
-                      <arg line="${basedir}/src/ -DGENERATED_JAVAH=${project.build.directory}/native/javah -DJVM_ARCH_DATA_MODEL=${sun.arch.data.model} -DREQUIRE_BZIP2=${require.bzip2} -DREQUIRE_SNAPPY=${require.snappy} -DCUSTOM_SNAPPY_PREFIX=${snappy.prefix} -DCUSTOM_SNAPPY_LIB=${snappy.lib} -DCUSTOM_SNAPPY_INCLUDE=${snappy.include} -DREQUIRE_OPENSSL=${require.openssl} -DCUSTOM_OPENSSL_PREFIX=${openssl.prefix} -DCUSTOM_OPENSSL_LIB=${openssl.lib} -DCUSTOM_OPENSSL_INCLUDE=${openssl.include}"/>
+                      <arg line="${basedir}/src/ -DGENERATED_JAVAH=${project.build.directory}/native/javah -DJVM_ARCH_DATA_MODEL=${sun.arch.data.model} -DREQUIRE_BZIP2=${require.bzip2} -DREQUIRE_SNAPPY=${require.snappy} -DCUSTOM_SNAPPY_PREFIX=${snappy.prefix} -DCUSTOM_SNAPPY_LIB=${snappy.lib} -DCUSTOM_SNAPPY_INCLUDE=${snappy.include}"/>
                     </exec>
                     <exec executable="make" dir="${project.build.directory}/native" failonerror="true">
                       <arg line="VERBOSE=1"/>
@@ -661,12 +784,6 @@
         <snappy.include></snappy.include>
         <require.snappy>false</require.snappy>
         <bundle.snappy.in.bin>true</bundle.snappy.in.bin>
-        <openssl.prefix></openssl.prefix>
-        <openssl.lib></openssl.lib>
-        <openssl.include></openssl.include>
-        <require.openssl>false</require.openssl>
-        <runningWithNative>true</runningWithNative>
-        <bundle.openssl.in.bin>false</bundle.openssl.in.bin>
       </properties>
       <build>
         <plugins>
@@ -712,8 +829,6 @@
                     <javahClassName>org.apache.hadoop.io.compress.snappy.SnappyDecompressor</javahClassName>
                     <javahClassName>org.apache.hadoop.io.compress.lz4.Lz4Compressor</javahClassName>
                     <javahClassName>org.apache.hadoop.io.compress.lz4.Lz4Decompressor</javahClassName>
-                    <javahClassName>org.apache.hadoop.crypto.OpensslCipher</javahClassName>
-                    <javahClassName>org.apache.hadoop.crypto.random.OpensslSecureRandom</javahClassName>
                     <javahClassName>org.apache.hadoop.util.NativeCrc32</javahClassName>
                   </javahClassNames>
                   <javahOutputDirectory>${project.build.directory}/native/javah</javahOutputDirectory>
@@ -738,9 +853,6 @@
                     <argument>/nologo</argument>
                     <argument>/p:Configuration=Release</argument>
                     <argument>/p:OutDir=${project.build.directory}/bin/</argument>
-                    <argument>/p:IntermediateOutputPath=${project.build.directory}/winutils/</argument>
-                    <argument>/p:WsceConfigDir=${wsce.config.dir}</argument>
-                    <argument>/p:WsceConfigFile=${wsce.config.file}</argument>
                   </arguments>
                 </configuration>
               </execution>
@@ -761,10 +873,6 @@
                     <argument>/p:CustomSnappyLib=${snappy.lib}</argument>
                     <argument>/p:CustomSnappyInclude=${snappy.include}</argument>
                     <argument>/p:RequireSnappy=${require.snappy}</argument>
-                    <argument>/p:CustomOpensslPrefix=${openssl.prefix}</argument>
-                    <argument>/p:CustomOpensslLib=${openssl.lib}</argument>
-                    <argument>/p:CustomOpensslInclude=${openssl.include}</argument>
-                    <argument>/p:RequireOpenssl=${require.openssl}</argument>
                   </arguments>
                 </configuration>
               </execution>

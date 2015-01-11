@@ -103,7 +103,7 @@ public class SnappyDecompressor implements Decompressor {
    * @param len Length
    */
   @Override
-  public void setInput(byte[] b, int off, int len) {
+  public synchronized void setInput(byte[] b, int off, int len) {
     if (b == null) {
       throw new NullPointerException();
     }
@@ -127,7 +127,7 @@ public class SnappyDecompressor implements Decompressor {
    * aside to be loaded by this function while the compressed data are
    * consumed.
    */
-  void setInputFromSavedData() {
+  synchronized void setInputFromSavedData() {
     compressedDirectBufLen = Math.min(userBufLen, directBufferSize);
 
     // Reinitialize snappy's input direct buffer
@@ -144,7 +144,7 @@ public class SnappyDecompressor implements Decompressor {
    * Does nothing.
    */
   @Override
-  public void setDictionary(byte[] b, int off, int len) {
+  public synchronized void setDictionary(byte[] b, int off, int len) {
     // do nothing
   }
 
@@ -158,7 +158,7 @@ public class SnappyDecompressor implements Decompressor {
    *         order to provide more input.
    */
   @Override
-  public boolean needsInput() {
+  public synchronized boolean needsInput() {
     // Consume remaining compressed data?
     if (uncompressedDirectBuf.remaining() > 0) {
       return false;
@@ -183,7 +183,7 @@ public class SnappyDecompressor implements Decompressor {
    * @return <code>false</code>.
    */
   @Override
-  public boolean needsDictionary() {
+  public synchronized boolean needsDictionary() {
     return false;
   }
 
@@ -195,7 +195,7 @@ public class SnappyDecompressor implements Decompressor {
    *         data output stream has been reached.
    */
   @Override
-  public boolean finished() {
+  public synchronized boolean finished() {
     return (finished && uncompressedDirectBuf.remaining() == 0);
   }
 
@@ -212,7 +212,7 @@ public class SnappyDecompressor implements Decompressor {
    * @throws IOException
    */
   @Override
-  public int decompress(byte[] b, int off, int len)
+  public synchronized int decompress(byte[] b, int off, int len)
       throws IOException {
     if (b == null) {
       throw new NullPointerException();
@@ -257,13 +257,13 @@ public class SnappyDecompressor implements Decompressor {
    * @return <code>0</code>.
    */
   @Override
-  public int getRemaining() {
+  public synchronized int getRemaining() {
     // Never use this function in BlockDecompressorStream.
     return 0;
   }
 
   @Override
-  public void reset() {
+  public synchronized void reset() {
     finished = false;
     compressedDirectBufLen = 0;
     uncompressedDirectBuf.limit(directBufferSize);
@@ -276,7 +276,7 @@ public class SnappyDecompressor implements Decompressor {
    * input data can be processed.
    */
   @Override
-  public void end() {
+  public synchronized void end() {
     // do nothing
   }
 
@@ -333,7 +333,7 @@ public class SnappyDecompressor implements Decompressor {
     private boolean endOfInput;
 
     @Override
-    public void decompress(ByteBuffer src, ByteBuffer dst)
+    public synchronized void decompress(ByteBuffer src, ByteBuffer dst)
         throws IOException {
       assert dst.isDirect() : "dst.isDirect()";
       assert src.isDirect() : "src.isDirect()";
@@ -343,13 +343,13 @@ public class SnappyDecompressor implements Decompressor {
     }
 
     @Override
-    public void setDictionary(byte[] b, int off, int len) {
+    public synchronized void setDictionary(byte[] b, int off, int len) {
       throw new UnsupportedOperationException(
           "byte[] arrays are not supported for DirectDecompressor");
     }
 
     @Override
-    public int decompress(byte[] b, int off, int len) {
+    public synchronized int decompress(byte[] b, int off, int len) {
       throw new UnsupportedOperationException(
           "byte[] arrays are not supported for DirectDecompressor");
     }

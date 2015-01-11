@@ -27,7 +27,6 @@ import java.util.TreeMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -674,11 +673,21 @@ public class NetworkTopology {
     return node1.getParent()==node2.getParent();
   }
 
-  private static final Random r = new Random();
+  private static final ThreadLocal<Random> r = new ThreadLocal<Random>();
 
-  @VisibleForTesting
-  void setRandomSeed(long seed) {
-    r.setSeed(seed);
+  /**
+   * Getter for thread-local Random, which provides better performance than
+   * a shared Random (even though Random is thread-safe).
+   *
+   * @return Thread-local Random.
+   */
+  protected Random getRandom() {
+    Random rand = r.get();
+    if (rand == null) {
+      rand = new Random();
+      r.set(rand);
+    }
+    return rand;
   }
 
   /** randomly choose one node from <i>scope</i>
@@ -730,7 +739,7 @@ public class NetworkTopology {
           "Failed to find datanode (scope=\"" + String.valueOf(scope) +
           "\" excludedScope=\"" + String.valueOf(excludedScope) + "\").");
     }
-    int leaveIndex = r.nextInt(numOfDatanodes);
+    int leaveIndex = getRandom().nextInt(numOfDatanodes);
     return innerNode.getLeaf(leaveIndex, node);
   }
 
@@ -767,35 +776,25 @@ public class NetworkTopology {
       scope=scope.substring(1);
     }
     scope = NodeBase.normalize(scope);
-    int excludedCountInScope = 0; // the number of nodes in both scope & excludedNodes
-    int excludedCountOffScope = 0; // the number of nodes outside scope & excludedNodes
+    int count=0; // the number of nodes in both scope & excludedNodes
     netlock.readLock().lock();
     try {
-      for (Node node : excludedNodes) {
-        node = getNode(NodeBase.getPath(node));
-        if (node == null) {
-          continue;
-        }
-        if ((NodeBase.getPath(node) + NodeBase.PATH_SEPARATOR_STR)
-            .startsWith(scope + NodeBase.PATH_SEPARATOR_STR)) {
-          excludedCountInScope++;
-        } else {
-          excludedCountOffScope++;
+      for(Node node:excludedNodes) {
+        if ((NodeBase.getPath(node)+NodeBase.PATH_SEPARATOR_STR).
+            startsWith(scope+NodeBase.PATH_SEPARATOR_STR)) {
+          count++;
         }
       }
-      Node n = getNode(scope);
-      int scopeNodeCount = 0;
-      if (n != null) {
-        scopeNodeCount++;
-      }
+      Node n=getNode(scope);
+      int scopeNodeCount=1;
       if (n instanceof InnerNode) {
         scopeNodeCount=((InnerNode)n).getNumOfLeaves();
       }
       if (isExcluded) {
-        return clusterMap.getNumOfLeaves() - scopeNodeCount
-            - excludedCountOffScope;
+        return clusterMap.getNumOfLeaves()-
+          scopeNodeCount-excludedNodes.size()+count;
       } else {
-        return scopeNodeCount - excludedCountInScope;
+        return scopeNodeCount-count;
       }
     } finally {
       netlock.readLock().unlock();
@@ -872,19 +871,21 @@ public class NetworkTopology {
   /**
    * Sort nodes array by network distance to <i>reader</i>.
    * <p/>
-   * In a three-level topology, a node can be either local, on the same rack,
-   * or on a different rack from the reader. Sorting the nodes based on network
-   * distance from the reader reduces network traffic and improves
-   * performance.
+   * In a three-level topology, a node can be either local, on the same rack, or
+   * on a different rack from the reader. Sorting the nodes based on network
+   * distance from the reader reduces network traffic and improves performance.
    * <p/>
    * As an additional twist, we also randomize the nodes at each network
-   * distance. This helps with load balancing when there is data skew.
-   *
-   * @param reader    Node where data will be read
-   * @param nodes     Available replicas with the requested data
-   * @param activeLen Number of active nodes at the front of the array
+   * distance using the provided random seed. This helps with load balancing
+   * when there is data skew.
+   * 
+   * @param reader Node where data will be read
+   * @param nodes Available replicas with the requested data
+   * @param seed Used to seed the pseudo-random generator that randomizes the
+   *          set of nodes at each network distance.
    */
-  public void sortByDistance(Node reader, Node[] nodes, int activeLen) {
+  public void sortByDistance(Node reader, Node[] nodes,
+      int activeLen, long seed) {
     /** Sort weights for the nodes array */
     int[] weights = new int[activeLen];
     for (int i=0; i<activeLen; i++) {
@@ -903,10 +904,15 @@ public class NetworkTopology {
       list.add(node);
     }
 
+    // Seed is normally the block id
+    // This means we use the same pseudo-random order for each block, for
+    // potentially better page cache usage.
+    Random rand = getRandom();
+    rand.setSeed(seed);
     int idx = 0;
     for (List<Node> list: tree.values()) {
       if (list != null) {
-        Collections.shuffle(list, r);
+        Collections.shuffle(list, rand);
         for (Node n: list) {
           nodes[idx] = n;
           idx++;

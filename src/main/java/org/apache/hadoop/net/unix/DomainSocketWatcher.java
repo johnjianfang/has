@@ -101,7 +101,6 @@ public final class DomainSocketWatcher implements Closeable {
    */
   private class NotificationHandler implements Handler {
     public boolean handle(DomainSocket sock) {
-      assert(lock.isHeldByCurrentThread());
       try {
         if (LOG.isTraceEnabled()) {
           LOG.trace(this + ": NotificationHandler: doing a read on " +
@@ -347,7 +346,6 @@ public final class DomainSocketWatcher implements Closeable {
    * Wake up the DomainSocketWatcher thread.
    */
   private void kick() {
-    assert(lock.isHeldByCurrentThread());
     try {
       notificationSockets[0].getOutputStream().write(0);
     } catch (IOException e) {
@@ -463,17 +461,12 @@ public final class DomainSocketWatcher implements Closeable {
       } catch (IOException e) {
         LOG.error(toString() + " terminating on IOException", e);
       } finally {
-        lock.lock();
-        try {
-          kick(); // allow the handler for notificationSockets[0] to read a byte
-          for (Entry entry : entries.values()) {
-            sendCallback("close", entries, fdSet, entry.getDomainSocket().fd);
-          }
-          entries.clear();
-          fdSet.close();
-        } finally {
-          lock.unlock();
+        kick(); // allow the handler for notificationSockets[0] to read a byte
+        for (Entry entry : entries.values()) {
+          sendCallback("close", entries, fdSet, entry.getDomainSocket().fd);
         }
+        entries.clear();
+        fdSet.close();
       }
     }
   });

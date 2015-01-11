@@ -24,10 +24,7 @@
 # The java implementation to use.
 export JAVA_HOME=${JAVA_HOME}
 
-# The jsvc implementation to use. Jsvc is required to run secure datanodes
-# that bind to privileged ports to provide authentication of data transfer
-# protocol.  Jsvc is not required if SASL is configured for authentication of
-# data transfer protocol using non-privileged ports.
+# The jsvc implementation to use. Jsvc is required to run secure datanodes.
 #export JSVC_HOME=${JSVC_HOME}
 
 export HADOOP_CONF_DIR=${HADOOP_CONF_DIR:-"/etc/hadoop"}
@@ -61,11 +58,7 @@ export HADOOP_PORTMAP_OPTS="-Xmx512m $HADOOP_PORTMAP_OPTS"
 export HADOOP_CLIENT_OPTS="-Xmx512m $HADOOP_CLIENT_OPTS"
 #HADOOP_JAVA_PLATFORM_OPTS="-XX:-UsePerfData $HADOOP_JAVA_PLATFORM_OPTS"
 
-# On secure datanodes, user to run the datanode as after dropping privileges.
-# This **MUST** be uncommented to enable secure HDFS if using privileged ports
-# to provide authentication of data transfer protocol.  This **MUST NOT** be
-# defined if SASL is configured for authentication of data transfer protocol
-# using non-privileged ports.
+# On secure datanodes, user to run the datanode as after dropping privileges
 export HADOOP_SECURE_DN_USER=${HADOOP_SECURE_DN_USER}
 
 # Where log files are stored.  $HADOOP_HOME/logs by default.
@@ -73,19 +66,6 @@ export HADOOP_SECURE_DN_USER=${HADOOP_SECURE_DN_USER}
 
 # Where log files are stored in the secure data environment.
 export HADOOP_SECURE_DN_LOG_DIR=${HADOOP_LOG_DIR}/${HADOOP_HDFS_USER}
-
-###
-# HDFS Mover specific parameters
-###
-# Specify the JVM options to be used when starting the HDFS Mover.
-# These options will be appended to the options specified as HADOOP_OPTS
-# and therefore may override any similar flags set in HADOOP_OPTS
-#
-# export HADOOP_MOVER_OPTS=""
-
-###
-# Advanced Users Only!
-###
 
 # The directory where pid files are stored. /tmp by default.
 # NOTE: this should be set to a directory that can only be written to by 

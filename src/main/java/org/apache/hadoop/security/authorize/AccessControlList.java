@@ -39,7 +39,7 @@ import org.apache.hadoop.util.StringUtils;
 /**
  * Class representing a configured access control list.
  */
-@InterfaceAudience.Public
+@InterfaceAudience.LimitedPrivate({"HDFS", "MapReduce"})
 @InterfaceStability.Evolving
 public class AccessControlList implements Writable {
 
@@ -209,7 +209,7 @@ public class AccessControlList implements Writable {
    * Get the names of users allowed for this service.
    * @return the set of user names. the set must not be modified.
    */
-  public Collection<String> getUsers() {
+  Collection<String> getUsers() {
     return users;
   }
   
@@ -217,17 +217,11 @@ public class AccessControlList implements Writable {
    * Get the names of user groups allowed for this service.
    * @return the set of group names. the set must not be modified.
    */
-  public Collection<String> getGroups() {
+  Collection<String> getGroups() {
     return groups;
   }
 
-  /**
-   * Checks if a user represented by the provided {@link UserGroupInformation}
-   * is a member of the Access Control List
-   * @param ugi UserGroupInformation to check if contained in the ACL
-   * @return true if ugi is member of the list
-   */
-  public final boolean isUserInList(UserGroupInformation ugi) {
+  public boolean isUserAllowed(UserGroupInformation ugi) {
     if (allAllowed || users.contains(ugi.getShortUserName())) {
       return true;
     } else {
@@ -238,10 +232,6 @@ public class AccessControlList implements Writable {
       }
     }
     return false;
-  }
-
-  public boolean isUserAllowed(UserGroupInformation ugi) {
-    return isUserInList(ugi);
   }
 
   /**

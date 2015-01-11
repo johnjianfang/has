@@ -58,7 +58,6 @@ public enum Errno {
   ELOOP,
   ENAMETOOLONG,
   ENOTEMPTY,
-  EOVERFLOW,
 
   UNKNOWN;
 }

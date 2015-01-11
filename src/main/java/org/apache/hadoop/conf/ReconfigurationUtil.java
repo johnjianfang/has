@@ -63,9 +63,4 @@ public class ReconfigurationUtil {
 
     return changes.values();
   }
-
-  public Collection<PropertyChange> parseChangedProperties(
-      Configuration newConf, Configuration oldConf) {
-    return getChangedProperties(newConf, oldConf);
-  }
 }

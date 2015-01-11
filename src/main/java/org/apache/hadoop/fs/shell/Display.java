@@ -18,7 +18,6 @@
 package org.apache.hadoop.fs.shell;
 
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,10 +35,8 @@ import org.apache.avro.io.JsonEncoder;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.AvroFSInput;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileChecksum;
-import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathIsDirectoryException;
@@ -129,17 +126,8 @@ class Display extends FsCommand {
     protected InputStream getInputStream(PathData item) throws IOException {
       FSDataInputStream i = (FSDataInputStream)super.getInputStream(item);
 
-      // Handle 0 and 1-byte files
-      short leadBytes;
-      try {
-        leadBytes = i.readShort();
-      } catch (EOFException e) {
-        i.seek(0);
-        return i;
-      }
-
       // Check type of stream first
-      switch(leadBytes) {
+      switch(i.readShort()) {
         case 0x1f8b: { // RFC 1952
           // Must be gzip
           i.seek(0);
@@ -272,9 +260,8 @@ class Display extends FsCommand {
       pos = 0;
       buffer = new byte[0];
       GenericDatumReader<Object> reader = new GenericDatumReader<Object>();
-      FileContext fc = FileContext.getFileContext(new Configuration());
       fileReader =
-        DataFileReader.openReader(new AvroFSInput(fc, status.getPath()),reader);
+        DataFileReader.openReader(new File(status.getPath().toUri()), reader);
       Schema schema = fileReader.getSchema();
       writer = new GenericDatumWriter<Object>(schema);
       output = new ByteArrayOutputStream();

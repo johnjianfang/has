@@ -138,7 +138,7 @@ copyToLocal
 
 count
 
-   Usage: <<<hdfs dfs -count [-q] [-h] <paths> >>>
+   Usage: <<<hdfs dfs -count [-q] <paths> >>>
 
    Count the number of directories, files and bytes under the paths that match
    the specified file pattern.  The output columns with -count are: DIR_COUNT,
@@ -147,15 +147,11 @@ count
    The output columns with -count -q are: QUOTA, REMAINING_QUATA, SPACE_QUOTA,
    REMAINING_SPACE_QUOTA, DIR_COUNT, FILE_COUNT, CONTENT_SIZE, FILE_NAME
 
-   The -h option shows sizes in human readable format.
-
    Example:
 
      * <<<hdfs dfs -count hdfs://nn1.example.com/file1 hdfs://nn2.example.com/file2>>>
 
      * <<<hdfs dfs -count -q hdfs://nn1.example.com/file1>>>
-
-     * <<<hdfs dfs -count -q -h hdfs://nn1.example.com/file1>>>
 
    Exit Code:
 
@@ -168,22 +164,15 @@ cp
    Copy files from source to destination. This command allows multiple sources
    as well in which case the destination must be a directory.
 
-   'raw.*' namespace extended attributes are preserved if (1) the source and
-   destination filesystems support them (HDFS only), and (2) all source and
-   destination pathnames are in the /.reserved/raw hierarchy. Determination of
-   whether raw.* namespace xattrs are preserved is independent of the
-   -p (preserve) flag.
-
     Options:
 
       * The -f option will overwrite the destination if it already exists.
       
-      * The -p option will preserve file attributes [topx] (timestamps,
+      * The -p option will preserve file attributes [topx] (timestamps, 
         ownership, permission, ACL, XAttr). If -p is specified with no <arg>,
         then preserves timestamps, ownership, permission. If -pa is specified,
         then preserves permission also because ACL is a super-set of
-        permission. Determination of whether raw namespace extended attributes
-        are preserved is independent of the -p flag.
+        permission.
 
    Example:
 
@@ -221,9 +210,7 @@ dus
 
    Usage: <<<hdfs dfs -dus <args> >>>
 
-   Displays a summary of file lengths.
-
-   <<Note:>> This command is deprecated. Instead use <<<hdfs dfs -du -s>>>.
+   Displays a summary of file lengths. This is an alternate form of hdfs dfs -du -s.
 
 expunge
 
@@ -313,12 +300,7 @@ getmerge
 
 ls
 
-   Usage: <<<hdfs dfs -ls [-R] <args> >>>
-
-   Options:
-
-     * The -R option will return stat recursively through the directory
-       structure.
+   Usage: <<<hdfs dfs -ls <args> >>>
 
    For a file returns stat on the file with the following format:
 
@@ -344,9 +326,7 @@ lsr
 
    Usage: <<<hdfs dfs -lsr <args> >>>
 
-   Recursive version of ls.
-
-   <<Note:>> This command is deprecated. Instead use <<<hdfs dfs -ls -R>>>
+   Recursive version of ls. Similar to Unix ls -R.
 
 mkdir
 
@@ -370,7 +350,7 @@ mkdir
 
 moveFromLocal
 
-   Usage: <<<hdfs dfs -moveFromLocal <localsrc> <dst> >>>
+   Usage: <<<dfs -moveFromLocal <localsrc> <dst> >>>
 
    Similar to put command, except that the source localsrc is deleted after
    it's copied.
@@ -422,22 +402,13 @@ put
 
 rm
 
-   Usage: <<<hdfs dfs -rm [-f] [-r|-R] [-skipTrash] URI [URI ...]>>>
+   Usage: <<<hdfs dfs -rm [-skipTrash] URI [URI ...]>>>
 
-   Delete files specified as args.
-
-   Options:
-
-    * The -f option will not display a diagnostic message or modify the exit
-      status to reflect an error if the file does not exist.
-
-    * The -R option deletes the directory and any content under it recursively.
-
-    * The -r option is equivalent to -R.
-
-    * The -skipTrash option will bypass trash, if enabled, and delete the
-      specified file(s) immediately. This can be useful when it is necessary
-      to delete files from an over-quota directory.
+   Delete files specified as args. Only deletes non empty directory and files.
+   If the -skipTrash option is specified, the trash, if enabled, will be
+   bypassed and the specified file(s) deleted immediately. This can be useful
+   when it is necessary to delete files from an over-quota directory. Refer to
+   rmr for recursive deletes.
 
    Example:
 
@@ -451,9 +422,20 @@ rmr
 
    Usage: <<<hdfs dfs -rmr [-skipTrash] URI [URI ...]>>>
 
-   Recursive version of delete.
+   Recursive version of delete. If the -skipTrash option is specified, the
+   trash, if enabled, will be bypassed and the specified file(s) deleted
+   immediately. This can be useful when it is necessary to delete files from an
+   over-quota directory.
 
-   <<Note:>> This command is deprecated. Instead use <<<hdfs dfs -rm -r>>>
+   Example:
+
+     * <<<hdfs dfs -rmr /user/hadoop/dir>>>
+
+     * <<<hdfs dfs -rmr hdfs://nn.example.com/user/hadoop/dir>>>
+
+   Exit Code:
+
+   Returns 0 on success and -1 on error.
 
 setfacl
 
@@ -617,7 +599,7 @@ touchz
 
    Example:
 
-     * <<<hdfs dfs -touchz pathname>>>
+     * <<<hadoop -touchz pathname>>>
 
    Exit Code:
    Returns 0 on success and -1 on error.

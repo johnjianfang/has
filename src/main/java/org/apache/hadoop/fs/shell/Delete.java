@@ -118,11 +118,7 @@ class Delete {
         } catch(FileNotFoundException fnfe) {
           throw fnfe;
         } catch (IOException ioe) {
-          String msg = ioe.getMessage();
-          if (ioe.getCause() != null) {
-            msg += ": " + ioe.getCause().getMessage();
-	  }
-          throw new IOException(msg + ". Consider using -skipTrash option", ioe);
+            throw new IOException(ioe.getMessage() + ". Consider using -skipTrash option", ioe);
         }
       }
       return success;

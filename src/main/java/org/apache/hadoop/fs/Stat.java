@@ -128,8 +128,6 @@ public class Stat extends Shell {
           " link " + original);
     }
     // 6,symbolic link,6,1373584236,1373584236,lrwxrwxrwx,andrew,andrew,`link' -> `target'
-    // OR
-    // 6,symbolic link,6,1373584236,1373584236,lrwxrwxrwx,andrew,andrew,'link' -> 'target'
     StringTokenizer tokens = new StringTokenizer(line, ",");
     try {
       long length = Long.parseLong(tokens.nextToken());
@@ -149,17 +147,18 @@ public class Stat extends Shell {
       String group = tokens.nextToken();
       String symStr = tokens.nextToken();
       // 'notalink'
-      // `link' -> `target' OR 'link' -> 'target'
+      // 'link' -> `target'
       // '' -> ''
       Path symlink = null;
-      String parts[] = symStr.split(" -> ");      
+      StringTokenizer symTokens = new StringTokenizer(symStr, "`");
+      symTokens.nextToken();
       try {
-        String target = parts[1];
-        target = target.substring(1, target.length()-1);
+        String target = symTokens.nextToken();
+        target = target.substring(0, target.length()-1);
         if (!target.isEmpty()) {
           symlink = new Path(target);
         }
-      } catch (ArrayIndexOutOfBoundsException e) {
+      } catch (NoSuchElementException e) {
         // null if not a symlink
       }
       // Set stat

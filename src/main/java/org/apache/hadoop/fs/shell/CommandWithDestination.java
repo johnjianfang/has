@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
-import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FilterFileSystem;
@@ -46,9 +45,6 @@ import org.apache.hadoop.fs.permission.AclUtil;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
 
-import static org.apache.hadoop.fs.CreateFlag.CREATE;
-import static org.apache.hadoop.fs.CreateFlag.LAZY_PERSIST;
-
 /**
  * Provides: argument processing to ensure the destination is valid
  * for the number of source arguments.  A processPaths that accepts both
@@ -60,19 +56,7 @@ abstract class CommandWithDestination extends FsCommand {
   private boolean overwrite = false;
   private boolean verifyChecksum = true;
   private boolean writeChecksum = true;
-  private boolean lazyPersist = false;
   
-  /**
-   * The name of the raw xattr namespace. It would be nice to use
-   * XAttr.RAW.name() but we can't reference the hadoop-hdfs project.
-   */
-  private static final String RAW = "raw.";
-
-  /**
-   * The name of the reserved raw directory.
-   */
-  private static final String RESERVED_RAW = "/.reserved/raw";
-
   /**
    * 
    * This method is used to enable the force(-f)  option while copying the files.
@@ -83,10 +67,6 @@ abstract class CommandWithDestination extends FsCommand {
     overwrite = flag;
   }
   
-  protected void setLazyPersist(boolean flag) {
-    lazyPersist = flag;
-  }
-
   protected void setVerifyChecksum(boolean flag) {
     verifyChecksum = flag;
   }
@@ -251,7 +231,7 @@ abstract class CommandWithDestination extends FsCommand {
   /**
    * Called with a source and target destination pair
    * @param src for the operation
-   * @param dst for the operation
+   * @param target for the operation
    * @throws IOException if anything goes wrong
    */
   protected void processPath(PathData src, PathData dst) throws IOException {
@@ -273,8 +253,6 @@ abstract class CommandWithDestination extends FsCommand {
       // modify dst as we descend to append the basename of the
       // current directory being processed
       dst = getTargetPath(src);
-      final boolean preserveRawXattrs =
-          checkPathsForReservedRaw(src.path, dst.path);
       if (dst.exists) {
         if (!dst.stat.isDirectory()) {
           throw new PathIsNotDirectoryException(dst.toString());
@@ -290,7 +268,7 @@ abstract class CommandWithDestination extends FsCommand {
       }      
       super.recursePath(src);
       if (dst.stat.isDirectory()) {
-        preserveAttributes(src, dst, preserveRawXattrs);
+        preserveAttributes(src, dst);
       }
     } finally {
       dst = savedDst;
@@ -317,60 +295,18 @@ abstract class CommandWithDestination extends FsCommand {
    * @param target where to copy the item
    * @throws IOException if copy fails
    */ 
-  protected void copyFileToTarget(PathData src, PathData target)
-      throws IOException {
-    final boolean preserveRawXattrs =
-        checkPathsForReservedRaw(src.path, target.path);
+  protected void copyFileToTarget(PathData src, PathData target) throws IOException {
     src.fs.setVerifyChecksum(verifyChecksum);
     InputStream in = null;
     try {
       in = src.fs.open(src.path);
       copyStreamToTarget(in, target);
-      preserveAttributes(src, target, preserveRawXattrs);
+      preserveAttributes(src, target);
     } finally {
       IOUtils.closeStream(in);
     }
   }
   
-  /**
-   * Check the source and target paths to ensure that they are either both in
-   * /.reserved/raw or neither in /.reserved/raw. If neither src nor target are
-   * in /.reserved/raw, then return false, indicating not to preserve raw.*
-   * xattrs. If both src/target are in /.reserved/raw, then return true,
-   * indicating raw.* xattrs should be preserved. If only one of src/target is
-   * in /.reserved/raw then throw an exception.
-   *
-   * @param src The source path to check. This should be a fully-qualified
-   *            path, not relative.
-   * @param target The target path to check. This should be a fully-qualified
-   *               path, not relative.
-   * @return true if raw.* xattrs should be preserved.
-   * @throws PathOperationException is only one of src/target are in
-   * /.reserved/raw.
-   */
-  private boolean checkPathsForReservedRaw(Path src, Path target)
-      throws PathOperationException {
-    final boolean srcIsRR = Path.getPathWithoutSchemeAndAuthority(src).
-        toString().startsWith(RESERVED_RAW);
-    final boolean dstIsRR = Path.getPathWithoutSchemeAndAuthority(target).
-        toString().startsWith(RESERVED_RAW);
-    boolean preserveRawXattrs = false;
-    if (srcIsRR && !dstIsRR) {
-      final String s = "' copy from '" + RESERVED_RAW + "' to non '" +
-          RESERVED_RAW + "'. Either both source and target must be in '" +
-          RESERVED_RAW + "' or neither.";
-      throw new PathOperationException("'" + src.toString() + s);
-    } else if (!srcIsRR && dstIsRR) {
-      final String s = "' copy from non '" + RESERVED_RAW +"' to '" +
-          RESERVED_RAW + "'. Either both source and target must be in '" +
-          RESERVED_RAW + "' or neither.";
-      throw new PathOperationException("'" + dst.toString() + s);
-    } else if (srcIsRR && dstIsRR) {
-      preserveRawXattrs = true;
-    }
-    return preserveRawXattrs;
-  }
-
   /**
    * Copies the stream contents to a temporary file.  If the copy is
    * successful, the temporary file will be renamed to the real path,
@@ -388,7 +324,7 @@ abstract class CommandWithDestination extends FsCommand {
     try {
       PathData tempTarget = target.suffix("._COPYING_");
       targetFs.setWriteChecksum(writeChecksum);
-      targetFs.writeStreamToFile(in, tempTarget, lazyPersist);
+      targetFs.writeStreamToFile(in, tempTarget);
       targetFs.rename(tempTarget, target);
     } finally {
       targetFs.close(); // last ditch effort to ensure temp file is removed
@@ -401,11 +337,9 @@ abstract class CommandWithDestination extends FsCommand {
    * attribute to preserve.
    * @param src source to preserve
    * @param target where to preserve attributes
-   * @param preserveRawXAttrs true if raw.* xattrs should be preserved
    * @throws IOException if fails to preserve attributes
    */
-  protected void preserveAttributes(PathData src, PathData target,
-      boolean preserveRawXAttrs)
+  protected void preserveAttributes(PathData src, PathData target)
       throws IOException {
     if (shouldPreserve(FileAttribute.TIMESTAMPS)) {
       target.fs.setTimes(
@@ -435,17 +369,13 @@ abstract class CommandWithDestination extends FsCommand {
         target.fs.setAcl(target.path, srcFullEntries);
       }
     }
-    final boolean preserveXAttrs = shouldPreserve(FileAttribute.XATTR);
-    if (preserveXAttrs || preserveRawXAttrs) {
+    if (shouldPreserve(FileAttribute.XATTR)) {
       Map<String, byte[]> srcXAttrs = src.fs.getXAttrs(src.path);
       if (srcXAttrs != null) {
         Iterator<Entry<String, byte[]>> iter = srcXAttrs.entrySet().iterator();
         while (iter.hasNext()) {
           Entry<String, byte[]> entry = iter.next();
-          final String xattrName = entry.getKey();
-          if (xattrName.startsWith(RAW) || preserveXAttrs) {
-            target.fs.setXAttr(target.path, entry.getKey(), entry.getValue());
-          }
+          target.fs.setXAttr(target.path, entry.getKey(), entry.getValue());
         }
       }
     }
@@ -458,11 +388,10 @@ abstract class CommandWithDestination extends FsCommand {
       super(fs);
     }
 
-    void writeStreamToFile(InputStream in, PathData target,
-                           boolean lazyPersist) throws IOException {
+    void writeStreamToFile(InputStream in, PathData target) throws IOException {
       FSDataOutputStream out = null;
       try {
-        out = create(target, lazyPersist);
+        out = create(target);
         IOUtils.copyBytes(in, out, getConf(), true);
       } finally {
         IOUtils.closeStream(out); // just in case copyBytes didn't
@@ -470,23 +399,9 @@ abstract class CommandWithDestination extends FsCommand {
     }
     
     // tag created files as temp files
-    FSDataOutputStream create(PathData item, boolean lazyPersist)
-        throws IOException {
+    FSDataOutputStream create(PathData item) throws IOException {
       try {
-        if (lazyPersist) {
-          EnumSet<CreateFlag> createFlags = EnumSet.of(CREATE, LAZY_PERSIST);
-          return create(item.path,
-                        FsPermission.getFileDefault().applyUMask(
-                            FsPermission.getUMask(getConf())),
-                        createFlags,
-                        getConf().getInt("io.file.buffer.size", 4096),
-                        lazyPersist ? 1 : getDefaultReplication(item.path),
-                        getDefaultBlockSize(),
-                        null,
-                        null);
-        } else {
-          return create(item.path, true);
-        }
+        return create(item.path, true);
       } finally { // might have been created but stream was interrupted
         deleteOnExit(item.path);
       }

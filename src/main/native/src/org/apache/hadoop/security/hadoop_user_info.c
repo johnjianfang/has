@@ -36,7 +36,7 @@
 struct hadoop_user_info *hadoop_user_info_alloc(void)
 {
   struct hadoop_user_info *uinfo;
-  long buf_sz;
+  size_t buf_sz;
   char *buf;
 
   uinfo = calloc(1, sizeof(struct hadoop_user_info));
@@ -193,17 +193,7 @@ int hadoop_user_info_getgroups(struct hadoop_user_info *uinfo)
   ngroups = uinfo->gids_size;
   ret = getgrouplist(uinfo->pwd.pw_name, uinfo->pwd.pw_gid, 
                          uinfo->gids, &ngroups);
-  // Return value is different on Linux vs. FreeBSD.  Linux: the number of groups
-  // or -1 on error.  FreeBSD: 0 on success or -1 on error.  Unfortunately, we
-  // can't accept a 0 return on Linux, because buggy implementations have been
-  // observed to return 0 but leave the other out parameters in an indeterminate
-  // state.  This deviates from the man page, but it has been observed in
-  // practice.  See issue HADOOP-10989 for details.
-#ifdef __linux__
   if (ret > 0) {
-#else
-  if (ret >= 0) {
-#endif
     uinfo->num_gids = ngroups;
     ret = put_primary_gid_first(uinfo);
     if (ret) {

@@ -176,21 +176,7 @@ public class UserGroupInformation {
       }
       // if we found the user, add our principal
       if (user != null) {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Using user: \"" + user + "\" with name " + user.getName());
-        }
-
-        User userEntry = null;
-        try {
-          userEntry = new User(user.getName());
-        } catch (Exception e) {
-          throw (LoginException)(new LoginException(e.toString()).initCause(e));
-        }
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("User entry: \"" + userEntry.toString() + "\"" );
-        }
-
-        subject.getPrincipals().add(userEntry);
+        subject.getPrincipals().add(new User(user.getName()));
         return true;
       }
       LOG.error("Can't find user in " + subject);
@@ -933,7 +919,7 @@ public class UserGroupInformation {
         metrics.loginFailure.add(Time.now() - start);
       }
       throw new IOException("Login failure for " + user + " from keytab " + 
-                            path+ ": " + le, le);
+                            path, le);
     }
     LOG.info("Login successful for user " + keytabPrincipal
         + " using keytab file " + keytabFile);

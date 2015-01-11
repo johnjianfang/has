@@ -276,21 +276,11 @@ public class TestRPC {
    */
   private static class StoppedRpcEngine implements RpcEngine {
 
-    @Override
-    public <T> ProtocolProxy<T> getProxy(Class<T> protocol, long clientVersion,
-        InetSocketAddress addr, UserGroupInformation ticket, Configuration conf,
-        SocketFactory factory, int rpcTimeout, RetryPolicy connectionRetryPolicy
-        ) throws IOException {
-      return getProxy(protocol, clientVersion, addr, ticket, conf, factory,
-        rpcTimeout, connectionRetryPolicy, null);
-    }
-
     @SuppressWarnings("unchecked")
     @Override
     public <T> ProtocolProxy<T> getProxy(Class<T> protocol, long clientVersion,
         InetSocketAddress addr, UserGroupInformation ticket, Configuration conf,
-        SocketFactory factory, int rpcTimeout,
-        RetryPolicy connectionRetryPolicy, AtomicBoolean fallbackToSimpleAuth
+        SocketFactory factory, int rpcTimeout, RetryPolicy connectionRetryPolicy
         ) throws IOException {
       T proxy = (T) Proxy.newProxyInstance(protocol.getClassLoader(),
               new Class[] { protocol }, new StoppedInvocationHandler());
@@ -506,8 +496,6 @@ public class TestRPC {
       caught = true;
     }
     assertTrue(caught);
-    rb = getMetrics(server.rpcDetailedMetrics.name());
-    assertCounter("IOExceptionNumOps", 1L, rb);
 
     proxy.testServerGet();
 
@@ -593,14 +581,14 @@ public class TestRPC {
       }
       MetricsRecordBuilder rb = getMetrics(server.rpcMetrics.name());
       if (expectFailure) {
-        assertCounter("RpcAuthorizationFailures", 1L, rb);
+        assertCounter("RpcAuthorizationFailures", 1, rb);
       } else {
-        assertCounter("RpcAuthorizationSuccesses", 1L, rb);
+        assertCounter("RpcAuthorizationSuccesses", 1, rb);
       }
       //since we don't have authentication turned ON, we should see 
       // 0 for the authentication successes and 0 for failure
-      assertCounter("RpcAuthenticationFailures", 0L, rb);
-      assertCounter("RpcAuthenticationSuccesses", 0L, rb);
+      assertCounter("RpcAuthenticationFailures", 0, rb);
+      assertCounter("RpcAuthenticationSuccesses", 0, rb);
     }
   }
   

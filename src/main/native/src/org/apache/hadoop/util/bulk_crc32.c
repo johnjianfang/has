@@ -55,22 +55,39 @@ static void pipelined_crc32c(uint32_t *crc1, uint32_t *crc2, uint32_t *crc3, con
 static int cached_cpu_supports_crc32; // initialized by constructor below
 static uint32_t crc32c_hardware(uint32_t crc, const uint8_t* data, size_t length);
 
-static inline int store_or_verify(uint32_t *sums, uint32_t crc,
-                                   int is_verify) {
-  if (!is_verify) {
-    *sums = crc;
-    return 1;
-  } else {
-    return crc == *sums;
+int bulk_calculate_crc(const uint8_t *data, size_t data_len,
+                    uint32_t *sums, int checksum_type,
+                    int bytes_per_checksum) {
+  uint32_t crc;
+  crc_update_func_t crc_update_func;
+
+  switch (checksum_type) {
+    case CRC32_ZLIB_POLYNOMIAL:
+      crc_update_func = crc32_zlib_sb8;
+      break;
+    case CRC32C_POLYNOMIAL:
+      crc_update_func = crc32c_sb8;
+      break;
+    default:
+      return -EINVAL;
+      break;
   }
+  while (likely(data_len > 0)) {
+    int len = likely(data_len >= bytes_per_checksum) ? bytes_per_checksum : data_len;
+    crc = CRC_INITIAL_VAL;
+    crc = crc_update_func(crc, data, len);
+    *sums = ntohl(crc_val(crc));
+    data += len;
+    data_len -= len;
+    sums++;
+  }
+  return 0;
 }
 
-int bulk_crc(const uint8_t *data, size_t data_len,
-                    uint32_t *sums, int checksum_type,
+int bulk_verify_crc(const uint8_t *data, size_t data_len,
+                    const uint32_t *sums, int checksum_type,
                     int bytes_per_checksum,
                     crc32_error_t *error_info) {
-
-  int is_verify = error_info != NULL;
 
 #ifdef USE_PIPELINED
   uint32_t crc1, crc2, crc3;
@@ -95,7 +112,7 @@ int bulk_crc(const uint8_t *data, size_t data_len,
       }
       break;
     default:
-      return is_verify ? INVALID_CHECKSUM_TYPE : -EINVAL;
+      return INVALID_CHECKSUM_TYPE;
   }
 
 #ifdef USE_PIPELINED
@@ -105,15 +122,16 @@ int bulk_crc(const uint8_t *data, size_t data_len,
       crc1 = crc2 = crc3 = CRC_INITIAL_VAL;
       pipelined_crc32c(&crc1, &crc2, &crc3, data, bytes_per_checksum, 3);
 
-      if (unlikely(!store_or_verify(sums, (crc = ntohl(crc_val(crc1))), is_verify)))
+      crc = ntohl(crc_val(crc1));
+      if ((crc = ntohl(crc_val(crc1))) != *sums)
         goto return_crc_error;
       sums++;
       data += bytes_per_checksum;
-      if (unlikely(!store_or_verify(sums, (crc = ntohl(crc_val(crc2))), is_verify)))
+      if ((crc = ntohl(crc_val(crc2))) != *sums)
         goto return_crc_error;
       sums++;
       data += bytes_per_checksum;
-      if (unlikely(!store_or_verify(sums, (crc = ntohl(crc_val(crc3))), is_verify)))
+      if ((crc = ntohl(crc_val(crc3))) != *sums)
         goto return_crc_error;
       sums++;
       data += bytes_per_checksum;
@@ -125,12 +143,12 @@ int bulk_crc(const uint8_t *data, size_t data_len,
       crc1 = crc2 = crc3 = CRC_INITIAL_VAL;
       pipelined_crc32c(&crc1, &crc2, &crc3, data, bytes_per_checksum, n_blocks);
 
-      if (unlikely(!store_or_verify(sums, (crc = ntohl(crc_val(crc1))), is_verify)))
+      if ((crc = ntohl(crc_val(crc1))) != *sums)
         goto return_crc_error;
       data += bytes_per_checksum;
       sums++;
       if (n_blocks == 2) {
-        if (unlikely(!store_or_verify(sums, (crc = ntohl(crc_val(crc2))), is_verify)))
+        if ((crc = ntohl(crc_val(crc2))) != *sums)
           goto return_crc_error;
         sums++;
         data += bytes_per_checksum;
@@ -142,10 +160,10 @@ int bulk_crc(const uint8_t *data, size_t data_len,
       crc1 = crc2 = crc3 = CRC_INITIAL_VAL;
       pipelined_crc32c(&crc1, &crc2, &crc3, data, remainder, 1);
 
-      if (unlikely(!store_or_verify(sums, (crc = ntohl(crc_val(crc1))), is_verify)))
+      if ((crc = ntohl(crc_val(crc1))) != *sums)
         goto return_crc_error;
     }
-    return is_verify ? CHECKSUMS_VALID : 0;
+    return CHECKSUMS_VALID;
   }
 #endif
 
@@ -154,14 +172,14 @@ int bulk_crc(const uint8_t *data, size_t data_len,
     crc = CRC_INITIAL_VAL;
     crc = crc_update_func(crc, data, len);
     crc = ntohl(crc_val(crc));
-    if (unlikely(!store_or_verify(sums, crc, is_verify))) {
+    if (unlikely(crc != *sums)) {
       goto return_crc_error;
     }
     data += len;
     data_len -= len;
     sums++;
   }
-  return is_verify ? CHECKSUMS_VALID : 0;
+  return CHECKSUMS_VALID;
 
 return_crc_error:
   if (error_info != NULL) {

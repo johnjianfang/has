@@ -30,12 +30,15 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.fs.ChecksumException;
 
 /**
- * This class provides interface and utilities for processing checksums for
+ * This class provides inteface and utilities for processing checksums for
  * DFS data transfers.
  */
 @InterfaceAudience.LimitedPrivate({"HDFS", "MapReduce"})
 @InterfaceStability.Evolving
 public class DataChecksum implements Checksum {
+  
+  // Misc constants
+  public static final int HEADER_LEN = 5; /// 1 byte type and 4 byte len
   
   // checksum types
   public static final int CHECKSUM_NULL    = 0;
@@ -100,7 +103,7 @@ public class DataChecksum implements Checksum {
    * @return DataChecksum of the type in the array or null in case of an error.
    */
   public static DataChecksum newDataChecksum( byte bytes[], int offset ) {
-    if (offset < 0 || bytes.length < offset + getChecksumHeaderSize()) {
+    if ( offset < 0 || bytes.length < offset + HEADER_LEN ) {
       return null;
     }
     
@@ -113,8 +116,8 @@ public class DataChecksum implements Checksum {
   }
   
   /**
-   * This constructs a DataChecksum by reading HEADER_LEN bytes from input
-   * stream <i>in</i>
+   * This constructucts a DataChecksum by reading HEADER_LEN bytes from
+   * input stream <i>in</i>
    */
   public static DataChecksum newDataChecksum( DataInputStream in )
                                  throws IOException {
@@ -138,7 +141,7 @@ public class DataChecksum implements Checksum {
   }
 
   public byte[] getHeader() {
-    byte[] header = new byte[getChecksumHeaderSize()];
+    byte[] header = new byte[DataChecksum.HEADER_LEN];
     header[0] = (byte) (type.id & 0xff);
     // Writing in buffer just like DataOutput.WriteInt()
     header[1+0] = (byte) ((bytesPerChecksum >>> 24) & 0xff);
@@ -226,17 +229,12 @@ public class DataChecksum implements Checksum {
     bytesPerChecksum = chunkSize;
   }
   
-  /** @return the checksum algorithm type. */
+  // Accessors
   public Type getChecksumType() {
     return type;
   }
-  /** @return the size for a checksum. */
   public int getChecksumSize() {
     return type.size;
-  }
-  /** @return the required checksum size given the data length. */
-  public int getChecksumSize(int dataSize) {
-    return ((dataSize - 1)/getBytesPerChecksum() + 1) * getChecksumSize(); 
   }
   public int getBytesPerChecksum() {
     return bytesPerChecksum;
@@ -341,13 +339,6 @@ public class DataChecksum implements Checksum {
       byte[] data, int dataOff, int dataLen,
       byte[] checksums, int checksumsOff, String fileName,
       long basePos) throws ChecksumException {
-    if (type.size == 0) return;
-
-    if (NativeCrc32.isAvailable()) {
-      NativeCrc32.verifyChunkedSumsByteArray(bytesPerChecksum, type.id,
-          checksums, checksumsOff, data, dataOff, dataLen, fileName, basePos);
-      return;
-    }
     
     int remaining = dataLen;
     int dataPos = 0;
@@ -393,12 +384,6 @@ public class DataChecksum implements Checksum {
           checksums.array(), checksums.arrayOffset() + checksums.position());
       return;
     }
-
-    if (NativeCrc32.isAvailable()) {
-      NativeCrc32.calculateChunkedSums(bytesPerChecksum, type.id,
-          checksums, data);
-      return;
-    }
     
     data.mark();
     checksums.mark();
@@ -421,16 +406,9 @@ public class DataChecksum implements Checksum {
    * Implementation of chunked calculation specifically on byte arrays. This
    * is to avoid the copy when dealing with ByteBuffers that have array backing.
    */
-  public void calculateChunkedSums(
+  private void calculateChunkedSums(
       byte[] data, int dataOffset, int dataLength,
       byte[] sums, int sumsOffset) {
-    if (type.size == 0) return;
-
-    if (NativeCrc32.isAvailable()) {
-      NativeCrc32.calculateChunkedSumsByteArray(bytesPerChecksum, type.id,
-          sums, sumsOffset, data, dataOffset, dataLength);
-      return;
-    }
 
     int remaining = dataLength;
     while (remaining > 0) {

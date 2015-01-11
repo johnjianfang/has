@@ -19,7 +19,6 @@ package org.apache.hadoop.net;
 
 import static org.junit.Assert.*;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.ConnectException;
@@ -255,17 +254,6 @@ public class TestNetUtils {
     assertInException(wrapped, "localhost");
     assertRemoteDetailsIncluded(wrapped);
     assertInException(wrapped, "/UnknownHost");
-  }
-  
-  @Test
-  public void testWrapEOFException() throws Throwable {
-    IOException e = new EOFException("eof");
-    IOException wrapped = verifyExceptionClass(e, EOFException.class);
-    assertInException(wrapped, "eof");
-    assertWikified(wrapped);
-    assertInException(wrapped, "localhost");
-    assertRemoteDetailsIncluded(wrapped);
-    assertInException(wrapped, "/EOFException");
   }
   
   @Test

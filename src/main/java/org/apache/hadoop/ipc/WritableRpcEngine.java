@@ -24,7 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 
 import java.net.InetSocketAddress;
 import java.io.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.SocketFactory;
 
@@ -42,8 +41,6 @@ import org.apache.hadoop.util.Time;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.*;
-import org.htrace.Trace;
-import org.htrace.TraceScope;
 
 /** An RpcEngine implementation for Writable data. */
 @InterfaceStability.Evolving
@@ -213,17 +210,14 @@ public class WritableRpcEngine implements RpcEngine {
     private Client.ConnectionId remoteId;
     private Client client;
     private boolean isClosed = false;
-    private final AtomicBoolean fallbackToSimpleAuth;
 
     public Invoker(Class<?> protocol,
                    InetSocketAddress address, UserGroupInformation ticket,
                    Configuration conf, SocketFactory factory,
-                   int rpcTimeout, AtomicBoolean fallbackToSimpleAuth)
-        throws IOException {
+                   int rpcTimeout) throws IOException {
       this.remoteId = Client.ConnectionId.getConnectionId(address, protocol,
           ticket, rpcTimeout, conf);
       this.client = CLIENTS.getClient(conf, factory);
-      this.fallbackToSimpleAuth = fallbackToSimpleAuth;
     }
 
     @Override
@@ -233,20 +227,9 @@ public class WritableRpcEngine implements RpcEngine {
       if (LOG.isDebugEnabled()) {
         startTime = Time.now();
       }
-      TraceScope traceScope = null;
-      if (Trace.isTracing()) {
-        traceScope = Trace.startSpan(
-            method.getDeclaringClass().getCanonicalName() +
-            "." + method.getName());
-      }
-      ObjectWritable value;
-      try {
-        value = (ObjectWritable)
-          client.call(RPC.RpcKind.RPC_WRITABLE, new Invocation(method, args),
-            remoteId, fallbackToSimpleAuth);
-      } finally {
-        if (traceScope != null) traceScope.close();
-      }
+
+      ObjectWritable value = (ObjectWritable)
+        client.call(RPC.RpcKind.RPC_WRITABLE, new Invocation(method, args), remoteId);
       if (LOG.isDebugEnabled()) {
         long callTime = Time.now() - startTime;
         LOG.debug("Call: " + method.getName() + " " + callTime);
@@ -280,25 +263,11 @@ public class WritableRpcEngine implements RpcEngine {
    * talking to a server at the named address. 
    * @param <T>*/
   @Override
-  public <T> ProtocolProxy<T> getProxy(Class<T> protocol, long clientVersion,
-                         InetSocketAddress addr, UserGroupInformation ticket,
-                         Configuration conf, SocketFactory factory,
-                         int rpcTimeout, RetryPolicy connectionRetryPolicy)
-    throws IOException {
-    return getProxy(protocol, clientVersion, addr, ticket, conf, factory,
-      rpcTimeout, connectionRetryPolicy, null);
-  }
-
-  /** Construct a client-side proxy object that implements the named protocol,
-   * talking to a server at the named address. 
-   * @param <T>*/
-  @Override
   @SuppressWarnings("unchecked")
   public <T> ProtocolProxy<T> getProxy(Class<T> protocol, long clientVersion,
                          InetSocketAddress addr, UserGroupInformation ticket,
                          Configuration conf, SocketFactory factory,
-                         int rpcTimeout, RetryPolicy connectionRetryPolicy,
-                         AtomicBoolean fallbackToSimpleAuth)
+                         int rpcTimeout, RetryPolicy connectionRetryPolicy)
     throws IOException {    
 
     if (connectionRetryPolicy != null) {
@@ -308,7 +277,7 @@ public class WritableRpcEngine implements RpcEngine {
 
     T proxy = (T) Proxy.newProxyInstance(protocol.getClassLoader(),
         new Class[] { protocol }, new Invoker(protocol, addr, ticket, conf,
-            factory, rpcTimeout, fallbackToSimpleAuth));
+            factory, rpcTimeout));
     return new ProtocolProxy<T>(protocol, proxy, true);
   }
   
@@ -502,29 +471,37 @@ public class WritableRpcEngine implements RpcEngine {
           
 
           // Invoke the protocol method
-       long startTime = Time.now();
-       int qTime = (int) (startTime-receivedTime);
-       Exception exception = null;
        try {
-          Method method =
+          long startTime = Time.now();
+          Method method = 
               protocolImpl.protocolClass.getMethod(call.getMethodName(),
               call.getParameterClasses());
           method.setAccessible(true);
           server.rpcDetailedMetrics.init(protocolImpl.protocolClass);
           Object value = 
               method.invoke(protocolImpl.protocolImpl, call.getParameters());
+          int processingTime = (int) (Time.now() - startTime);
+          int qTime = (int) (startTime-receivedTime);
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Served: " + call.getMethodName() +
+                      " queueTime= " + qTime +
+                      " procesingTime= " + processingTime);
+          }
+          server.rpcMetrics.addRpcQueueTime(qTime);
+          server.rpcMetrics.addRpcProcessingTime(processingTime);
+          server.rpcDetailedMetrics.addProcessingTime(call.getMethodName(),
+                                               processingTime);
           if (server.verbose) log("Return: "+value);
+
           return new ObjectWritable(method.getReturnType(), value);
 
         } catch (InvocationTargetException e) {
           Throwable target = e.getTargetException();
           if (target instanceof IOException) {
-            exception = (IOException)target;
             throw (IOException)target;
           } else {
             IOException ioe = new IOException(target.toString());
             ioe.setStackTrace(target.getStackTrace());
-            exception = ioe;
             throw ioe;
           }
         } catch (Throwable e) {
@@ -533,27 +510,8 @@ public class WritableRpcEngine implements RpcEngine {
           }
           IOException ioe = new IOException(e.toString());
           ioe.setStackTrace(e.getStackTrace());
-          exception = ioe;
           throw ioe;
-        } finally {
-         int processingTime = (int) (Time.now() - startTime);
-         if (LOG.isDebugEnabled()) {
-           String msg = "Served: " + call.getMethodName() +
-               " queueTime= " + qTime +
-               " procesingTime= " + processingTime;
-           if (exception != null) {
-             msg += " exception= " + exception.getClass().getSimpleName();
-           }
-           LOG.debug(msg);
-         }
-         String detailedMetricsName = (exception == null) ?
-             call.getMethodName() :
-             exception.getClass().getSimpleName();
-         server.rpcMetrics.addRpcQueueTime(qTime);
-         server.rpcMetrics.addRpcProcessingTime(processingTime);
-         server.rpcDetailedMetrics.addProcessingTime(detailedMetricsName,
-             processingTime);
-       }
+        }
       }
     }
   }

@@ -49,9 +49,9 @@ import org.apache.hadoop.security.UserGroupInformation;
  * <code>GenericOptionsParser</code> is a utility to parse command line
  * arguments generic to the Hadoop framework. 
  * 
- * <code>GenericOptionsParser</code> recognizes several standard command
+ * <code>GenericOptionsParser</code> recognizes several standarad command 
  * line arguments, enabling applications to easily specify a namenode, a 
- * ResourceManager, additional configuration resources etc.
+ * jobtracker, additional configuration resources etc.
  * 
  * <h4 id="GenericOptions">Generic Options</h4>
  * 
@@ -60,7 +60,7 @@ import org.apache.hadoop.security.UserGroupInformation;
  *     -conf &lt;configuration file&gt;     specify a configuration file
  *     -D &lt;property=value&gt;            use value for given property
  *     -fs &lt;local|namenode:port&gt;      specify a namenode
- *     -jt &lt;local|resourcemanager:port&gt;    specify a ResourceManager
+ *     -jt &lt;local|jobtracker:port&gt;    specify a job tracker
  *     -files &lt;comma separated list of files&gt;    specify comma separated
  *                            files to be copied to the map reduce cluster
  *     -libjars &lt;comma separated list of jars&gt;   specify comma separated
@@ -90,13 +90,13 @@ import org.apache.hadoop.security.UserGroupInformation;
  *     
  * $ bin/hadoop dfs -conf core-site.xml -conf hdfs-site.xml -ls /data
  * list /data directory in dfs with multiple conf files specified.
- *
- * $ bin/hadoop job -D yarn.resourcemanager.address=darwin:8032 -submit job.xml
- * submit a job to ResourceManager darwin:8032
- *
- * $ bin/hadoop job -jt darwin:8032 -submit job.xml
- * submit a job to ResourceManager darwin:8032
- *
+ *     
+ * $ bin/hadoop job -D mapred.job.tracker=darwin:50020 -submit job.xml
+ * submit a job to job tracker darwin:50020
+ *     
+ * $ bin/hadoop job -jt darwin:50020 -submit job.xml
+ * submit a job to job tracker darwin:50020
+ *     
  * $ bin/hadoop job -jt local -submit job.xml
  * submit a job to local runner
  * 
@@ -213,9 +213,9 @@ public class GenericOptionsParser {
     .hasArg()
     .withDescription("specify a namenode")
     .create("fs");
-    Option jt = OptionBuilder.withArgName("local|resourcemanager:port")
+    Option jt = OptionBuilder.withArgName("local|jobtracker:port")
     .hasArg()
-    .withDescription("specify a ResourceManager")
+    .withDescription("specify a job tracker")
     .create("jt");
     Option oconf = OptionBuilder.withArgName("configuration file")
     .hasArg()
@@ -332,7 +332,7 @@ public class GenericOptionsParser {
       }
       UserGroupInformation.getCurrentUser().addCredentials(
           Credentials.readTokenStorageFile(p, conf));
-      conf.set("mapreduce.job.credentials.binary", p.toString(),
+      conf.set("mapreduce.job.credentials.json", p.toString(),
                "from -tokenCacheFile command line option");
 
     }
@@ -378,15 +378,9 @@ public class GenericOptionsParser {
     if (files == null) 
       return null;
     String[] fileArr = files.split(",");
-    if (fileArr.length == 0) {
-      throw new IllegalArgumentException("File name can't be empty string");
-    }
     String[] finalArr = new String[fileArr.length];
     for (int i =0; i < fileArr.length; i++) {
       String tmp = fileArr[i];
-      if (tmp.isEmpty()) {
-        throw new IllegalArgumentException("File name can't be empty string");
-      }
       String finalPath;
       URI pathURI;
       try {
@@ -408,7 +402,7 @@ public class GenericOptionsParser {
       else {
         // check if the file exists in this file system
         // we need to recreate this filesystem object to copy
-        // these files to the file system ResourceManager is running
+        // these files to the file system jobtracker is running
         // on.
         FileSystem fs = path.getFileSystem(conf);
         if (!fs.exists(path)) {
@@ -502,7 +496,7 @@ public class GenericOptionsParser {
     out.println("-conf <configuration file>     specify an application configuration file");
     out.println("-D <property=value>            use value for given property");
     out.println("-fs <local|namenode:port>      specify a namenode");
-    out.println("-jt <local|resourcemanager:port>    specify a ResourceManager");
+    out.println("-jt <local|jobtracker:port>    specify a job tracker");
     out.println("-files <comma separated list of files>    " + 
       "specify comma separated files to be copied to the map reduce cluster");
     out.println("-libjars <comma separated list of jars>    " +

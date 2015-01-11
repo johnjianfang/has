@@ -207,7 +207,7 @@ public class CommonConfigurationKeysPublic {
   public static final String  IPC_CLIENT_TCPNODELAY_KEY =
     "ipc.client.tcpnodelay";
   /** Defalt value for IPC_CLIENT_TCPNODELAY_KEY */
-  public static final boolean IPC_CLIENT_TCPNODELAY_DEFAULT = true;
+  public static final boolean IPC_CLIENT_TCPNODELAY_DEFAULT = false;
   /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
   public static final String  IPC_SERVER_LISTEN_QUEUE_SIZE_KEY =
     "ipc.server.listen.queue.size";
@@ -226,7 +226,7 @@ public class CommonConfigurationKeysPublic {
   public static final String  IPC_SERVER_TCPNODELAY_KEY =
     "ipc.server.tcpnodelay";
   /** Default value for IPC_SERVER_TCPNODELAY_KEY */
-  public static final boolean IPC_SERVER_TCPNODELAY_DEFAULT = true;
+  public static final boolean IPC_SERVER_TCPNODELAY_DEFAULT = false;
 
   /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
   public static final String  HADOOP_RPC_SOCKET_FACTORY_CLASS_DEFAULT_KEY =
@@ -249,12 +249,6 @@ public class CommonConfigurationKeysPublic {
   /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
   public static final long HADOOP_SECURITY_GROUPS_CACHE_SECS_DEFAULT =
     300;
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String  HADOOP_SECURITY_GROUPS_NEGATIVE_CACHE_SECS =
-    "hadoop.security.groups.negative-cache.secs";
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final long HADOOP_SECURITY_GROUPS_NEGATIVE_CACHE_SECS_DEFAULT =
-    30;
   /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
   public static final String HADOOP_SECURITY_GROUPS_CACHE_WARN_AFTER_MS =
     "hadoop.security.groups.cache.warn.after.ms";
@@ -296,65 +290,8 @@ public class CommonConfigurationKeysPublic {
   /** Class to override Sasl Properties for a connection */
   public static final String  HADOOP_SECURITY_SASL_PROPS_RESOLVER_CLASS =
     "hadoop.security.saslproperties.resolver.class";
-  public static final String HADOOP_SECURITY_CRYPTO_CODEC_CLASSES_KEY_PREFIX = 
-    "hadoop.security.crypto.codec.classes";
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String HADOOP_SECURITY_CRYPTO_CIPHER_SUITE_KEY =
-    "hadoop.security.crypto.cipher.suite";
-  public static final String HADOOP_SECURITY_CRYPTO_CIPHER_SUITE_DEFAULT = 
-    "AES/CTR/NoPadding";
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String HADOOP_SECURITY_CRYPTO_JCE_PROVIDER_KEY =
-    "hadoop.security.crypto.jce.provider";
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String HADOOP_SECURITY_CRYPTO_BUFFER_SIZE_KEY = 
-    "hadoop.security.crypto.buffer.size";
-  /** Defalt value for HADOOP_SECURITY_CRYPTO_BUFFER_SIZE_KEY */
-  public static final int HADOOP_SECURITY_CRYPTO_BUFFER_SIZE_DEFAULT = 8192;
   /** Class to override Impersonation provider */
   public static final String  HADOOP_SECURITY_IMPERSONATION_PROVIDER_CLASS =
     "hadoop.security.impersonation.provider.class";
-
-  //  <!--- KMSClientProvider configurations —>
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String KMS_CLIENT_ENC_KEY_CACHE_SIZE =
-      "hadoop.security.kms.client.encrypted.key.cache.size";
-  /** Default value for KMS_CLIENT_ENC_KEY_CACHE_SIZE */
-  public static final int KMS_CLIENT_ENC_KEY_CACHE_SIZE_DEFAULT = 500;
-
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String KMS_CLIENT_ENC_KEY_CACHE_LOW_WATERMARK =
-      "hadoop.security.kms.client.encrypted.key.cache.low-watermark";
-  /** Default value for KMS_CLIENT_ENC_KEY_CACHE_LOW_WATERMARK */
-  public static final float KMS_CLIENT_ENC_KEY_CACHE_LOW_WATERMARK_DEFAULT =
-      0.3f;
-
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String KMS_CLIENT_ENC_KEY_CACHE_NUM_REFILL_THREADS =
-      "hadoop.security.kms.client.encrypted.key.cache.num.refill.threads";
-  /** Default value for KMS_CLIENT_ENC_KEY_NUM_REFILL_THREADS */
-  public static final int KMS_CLIENT_ENC_KEY_CACHE_NUM_REFILL_THREADS_DEFAULT =
-      2;
-
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String KMS_CLIENT_ENC_KEY_CACHE_EXPIRY_MS =
-      "hadoop.security.kms.client.encrypted.key.cache.expiry";
-  /** Default value for KMS_CLIENT_ENC_KEY_CACHE_EXPIRY (12 hrs)*/
-  public static final int KMS_CLIENT_ENC_KEY_CACHE_EXPIRY_DEFAULT = 43200000;
-
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String HADOOP_SECURITY_JAVA_SECURE_RANDOM_ALGORITHM_KEY = 
-    "hadoop.security.java.secure.random.algorithm";
-  /** Defalt value for HADOOP_SECURITY_JAVA_SECURE_RANDOM_ALGORITHM_KEY */
-  public static final String HADOOP_SECURITY_JAVA_SECURE_RANDOM_ALGORITHM_DEFAULT = 
-    "SHA1PRNG";
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String HADOOP_SECURITY_SECURE_RANDOM_IMPL_KEY = 
-    "hadoop.security.secure.random.impl";
-  /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
-  public static final String HADOOP_SECURITY_SECURE_RANDOM_DEVICE_FILE_PATH_KEY = 
-    "hadoop.security.random.device.file.path";
-  public static final String HADOOP_SECURITY_SECURE_RANDOM_DEVICE_FILE_PATH_DEFAULT = 
-    "/dev/urandom";
 }
 

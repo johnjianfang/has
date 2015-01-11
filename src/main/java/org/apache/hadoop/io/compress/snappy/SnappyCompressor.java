@@ -100,7 +100,7 @@ public class SnappyCompressor implements Compressor {
    * @param len Length
    */
   @Override
-  public void setInput(byte[] b, int off, int len) {
+  public synchronized void setInput(byte[] b, int off, int len) {
     if (b == null) {
       throw new NullPointerException();
     }
@@ -127,7 +127,7 @@ public class SnappyCompressor implements Compressor {
    * aside to be loaded by this function while the compressed data are
    * consumed.
    */
-  void setInputFromSavedData() {
+  synchronized void setInputFromSavedData() {
     if (0 >= userBufLen) {
       return;
     }
@@ -146,7 +146,7 @@ public class SnappyCompressor implements Compressor {
    * Does nothing.
    */
   @Override
-  public void setDictionary(byte[] b, int off, int len) {
+  public synchronized void setDictionary(byte[] b, int off, int len) {
     // do nothing
   }
 
@@ -158,7 +158,7 @@ public class SnappyCompressor implements Compressor {
    *         #setInput() should be called in order to provide more input.
    */
   @Override
-  public boolean needsInput() {
+  public synchronized boolean needsInput() {
     return !(compressedDirectBuf.remaining() > 0
         || uncompressedDirectBuf.remaining() == 0 || userBufLen > 0);
   }
@@ -168,7 +168,7 @@ public class SnappyCompressor implements Compressor {
    * with the current contents of the input buffer.
    */
   @Override
-  public void finish() {
+  public synchronized void finish() {
     finish = true;
   }
 
@@ -180,7 +180,7 @@ public class SnappyCompressor implements Compressor {
    *         data output stream has been reached.
    */
   @Override
-  public boolean finished() {
+  public synchronized boolean finished() {
     // Check if all uncompressed data has been consumed
     return (finish && finished && compressedDirectBuf.remaining() == 0);
   }
@@ -197,7 +197,7 @@ public class SnappyCompressor implements Compressor {
    * @return The actual number of bytes of compressed data.
    */
   @Override
-  public int compress(byte[] b, int off, int len)
+  public synchronized int compress(byte[] b, int off, int len)
       throws IOException {
     if (b == null) {
       throw new NullPointerException();
@@ -250,7 +250,7 @@ public class SnappyCompressor implements Compressor {
    * Resets compressor so that a new set of input data can be processed.
    */
   @Override
-  public void reset() {
+  public synchronized void reset() {
     finish = false;
     finished = false;
     uncompressedDirectBuf.clear();
@@ -268,7 +268,7 @@ public class SnappyCompressor implements Compressor {
    * @param conf Configuration from which new setting are fetched
    */
   @Override
-  public void reinit(Configuration conf) {
+  public synchronized void reinit(Configuration conf) {
     reset();
   }
 
@@ -276,7 +276,7 @@ public class SnappyCompressor implements Compressor {
    * Return number of bytes given to this compressor since last reset.
    */
   @Override
-  public long getBytesRead() {
+  public synchronized long getBytesRead() {
     return bytesRead;
   }
 
@@ -284,7 +284,7 @@ public class SnappyCompressor implements Compressor {
    * Return number of bytes consumed by callers of compress since last reset.
    */
   @Override
-  public long getBytesWritten() {
+  public synchronized long getBytesWritten() {
     return bytesWritten;
   }
 
@@ -292,7 +292,7 @@ public class SnappyCompressor implements Compressor {
    * Closes the compressor and discards any unprocessed input.
    */
   @Override
-  public void end() {
+  public synchronized void end() {
   }
 
   private native static void initIDs();

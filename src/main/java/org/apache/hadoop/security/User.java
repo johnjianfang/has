@@ -47,8 +47,7 @@ class User implements Principal {
     try {
       shortName = new HadoopKerberosName(name).getShortName();
     } catch (IOException ioe) {
-      throw new IllegalArgumentException("Illegal principal name " + name
-                                         +": " + ioe.toString(), ioe);
+      throw new IllegalArgumentException("Illegal principal name " + name, ioe);
     }
     fullName = name;
 

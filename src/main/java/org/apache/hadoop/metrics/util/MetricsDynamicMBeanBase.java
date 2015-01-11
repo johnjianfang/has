@@ -160,7 +160,7 @@ public abstract class MetricsDynamicMBeanBase implements DynamicMBean {
       else if (attributeName.endsWith(MAX_TIME))
         return or.getMaxTime();
       else {
-        MetricsUtil.LOG.error("Unexpected attribute suffix");
+        MetricsUtil.LOG.error("Unexpected attrubute suffix");
         throw new AttributeNotFoundException();
       }
     } else {

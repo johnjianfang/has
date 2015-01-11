@@ -95,8 +95,7 @@ public class SnappyCodec implements Configurable, CompressionCodec, DirectDecomp
   @Override
   public CompressionOutputStream createOutputStream(OutputStream out)
       throws IOException {
-    return CompressionCodec.Util.
-        createOutputStreamWithCodecPool(this, conf, out);
+    return createOutputStream(out, createCompressor());
   }
 
   /**
@@ -159,8 +158,7 @@ public class SnappyCodec implements Configurable, CompressionCodec, DirectDecomp
   @Override
   public CompressionInputStream createInputStream(InputStream in)
       throws IOException {
-    return CompressionCodec.Util.
-        createInputStreamWithCodecPool(this, conf, in);
+    return createInputStream(in, createDecompressor());
   }
 
   /**

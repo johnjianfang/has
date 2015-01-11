@@ -19,11 +19,6 @@
 package org.apache.hadoop.security.ssl;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.security.alias.CredentialProvider;
-import org.apache.hadoop.security.alias.CredentialProviderFactory;
-import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
-
 import sun.security.x509.AlgorithmId;
 import sun.security.x509.CertificateAlgorithmId;
 import sun.security.x509.CertificateIssuerName;
@@ -385,44 +380,6 @@ public class KeyStoreTestUtil {
       conf.writeXml(writer);
     } finally {
       writer.close();
-    }
-  }
-
-  public static void provisionPasswordsToCredentialProvider() throws Exception {
-    File testDir = new File(System.getProperty("test.build.data",
-        "target/test-dir"));
-
-    Configuration conf = new Configuration();
-    final Path jksPath = new Path(testDir.toString(), "test.jks");
-    final String ourUrl =
-    JavaKeyStoreProvider.SCHEME_NAME + "://file" + jksPath.toUri();
-
-    File file = new File(testDir, "test.jks");
-    file.delete();
-    conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, ourUrl);
-
-    CredentialProvider provider =
-        CredentialProviderFactory.getProviders(conf).get(0);
-    char[] keypass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-    char[] storepass = {'s', 't', 'o', 'r', 'e', 'p', 'a', 's', 's'};
-
-    // create new aliases
-    try {
-      provider.createCredentialEntry(
-          FileBasedKeyStoresFactory.resolvePropertyName(SSLFactory.Mode.SERVER,
-              FileBasedKeyStoresFactory.SSL_KEYSTORE_PASSWORD_TPL_KEY),
-              storepass);
-
-      provider.createCredentialEntry(
-          FileBasedKeyStoresFactory.resolvePropertyName(SSLFactory.Mode.SERVER,
-              FileBasedKeyStoresFactory.SSL_KEYSTORE_KEYPASSWORD_TPL_KEY),
-              keypass);
-
-      // write out so that it can be found in checks
-      provider.flush();
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
     }
   }
 }

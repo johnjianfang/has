@@ -121,7 +121,7 @@ public class TestDelegationToken {
 
     @Override
     protected void storeNewToken(TestDelegationTokenIdentifier ident,
-        long renewDate) throws IOException {
+        long renewDate) {
       super.storeNewToken(ident, renewDate);
       isStoreNewTokenCalled = true;
     }
@@ -135,7 +135,7 @@ public class TestDelegationToken {
 
     @Override
     protected void updateStoredToken(TestDelegationTokenIdentifier ident,
-        long renewDate) throws IOException {
+        long renewDate) {
       super.updateStoredToken(ident, renewDate);
       isUpdateStoredTokenCalled = true;
     }

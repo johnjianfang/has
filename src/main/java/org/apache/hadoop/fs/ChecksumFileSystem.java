@@ -381,8 +381,7 @@ public abstract class ChecksumFileSystem extends FilterFileSystem {
                           long blockSize,
                           Progressable progress)
       throws IOException {
-      super(DataChecksum.newDataChecksum(DataChecksum.Type.CRC32,
-          fs.getBytesPerSum()));
+      super(DataChecksum.newCrc32(), fs.getBytesPerSum(), 4);
       int bytesPerSum = fs.getBytesPerSum();
       this.datas = fs.getRawFileSystem().create(file, overwrite, bufferSize, 
                                          replication, blockSize, progress);
@@ -406,11 +405,10 @@ public abstract class ChecksumFileSystem extends FilterFileSystem {
     }
     
     @Override
-    protected void writeChunk(byte[] b, int offset, int len, byte[] checksum,
-        int ckoff, int cklen)
+    protected void writeChunk(byte[] b, int offset, int len, byte[] checksum)
     throws IOException {
       datas.write(b, offset, len);
-      sums.write(checksum, ckoff, cklen);
+      sums.write(checksum);
     }
 
     @Override
@@ -562,7 +560,7 @@ public abstract class ChecksumFileSystem extends FilterFileSystem {
    * 
    * @param f
    *          given path
-   * @return the statuses of the files/directories in the given path
+   * @return the statuses of the files/directories in the given patch
    * @throws IOException
    */
   @Override

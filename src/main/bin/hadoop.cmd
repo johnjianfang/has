@@ -115,14 +115,11 @@ call :updatepath %HADOOP_BIN_PATH%
   )
 
   if %hadoop-command% == classpath (
-    if not defined hadoop-command-arguments (
-      @rem No need to bother starting up a JVM for this simple case.
-      @echo %CLASSPATH%
-      exit /b
-    )
+    @echo %CLASSPATH%
+    goto :eof
   )
   
-  set corecommands=fs version jar checknative distcp daemonlog archive classpath credential key
+  set corecommands=fs version jar checknative distcp daemonlog archive
   for %%i in ( %corecommands% ) do (
     if %hadoop-command% == %%i set corecommand=true  
   )
@@ -176,18 +173,6 @@ call :updatepath %HADOOP_BIN_PATH%
 :archive
   set CLASS=org.apache.hadoop.tools.HadoopArchives
   set CLASSPATH=%CLASSPATH%;%TOOL_PATH%
-  goto :eof
-
-:classpath
-  set CLASS=org.apache.hadoop.util.Classpath
-  goto :eof
-
-:credential
-  set CLASS=org.apache.hadoop.security.alias.CredentialShell
-  goto :eof
-
-:key
-  set CLASS=org.apache.hadoop.crypto.key.KeyShell
   goto :eof
 
 :updatepath
@@ -246,8 +231,6 @@ call :updatepath %HADOOP_BIN_PATH%
   @echo   archive -archiveName NAME -p ^<parent path^> ^<src^>* ^<dest^> create a hadoop archive
   @echo   classpath            prints the class path needed to get the
   @echo                        Hadoop jar and the required libraries
-  @echo   credential           interact with credential providers
-  @echo   key                  manage keys via the KeyProvider
   @echo   daemonlog            get/set the log level for each daemon
   @echo  or
   @echo   CLASSNAME            run the class named CLASSNAME
