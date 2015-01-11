@@ -512,11 +512,9 @@
               <source>
                 <directory>${basedir}/src/main/proto</directory>
                 <includes>
-                  <include>HAServiceProtocol.proto</include>
                   <include>IpcConnectionContext.proto</include>
                   <include>ProtocolInfo.proto</include>
                   <include>RpcHeader.proto</include>
-                  <include>ZKFCProtocol.proto</include>
                   <include>ProtobufRpcEngine.proto</include>
                   <include>Security.proto</include>
                   <include>GetUserMappingsProtocol.proto</include>
