@@ -582,36 +582,6 @@ for ldap providers in the same way as above does.
 </property>
 
 <property>
-  <name>fs.s3.block.size</name>
-  <value>67108864</value>
-  <description>Block size to use when writing files to S3.</description>
-</property>
-
-<property>
-  <name>fs.s3.buffer.dir</name>
-  <value>${hadoop.tmp.dir}/s3</value>
-  <description>Determines where on the local filesystem the S3 filesystem
-  should store files before sending them to S3
-  (or after retrieving them from S3).
-  </description>
-</property>
-
-<property>
-  <name>fs.s3.maxRetries</name>
-  <value>4</value>
-  <description>The maximum number of retries for reading or writing files to S3, 
-  before we signal failure to the application.
-  </description>
-</property>
-
-<property>
-  <name>fs.s3.sleepTimeSeconds</name>
-  <value>10</value>
-  <description>The number of seconds to sleep between each S3 retry.
-  </description>
-</property>
-
-<property>
   <name>fs.swift.impl</name>
   <value>org.apache.hadoop.fs.swift.snative.SwiftNativeFileSystem</value>
   <description>The implementation class of the OpenStack Swift Filesystem</description>
